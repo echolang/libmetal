@@ -1,0 +1,248 @@
+/**
+ * Value types with C-identical layout for the ones that cross the ABI,
+ * and the public Size / Origin / Region / Viewport / ClearColor / ScissorRect.
+ */
+
+namespace mtl;
+
+public struct Size
+{
+    public usize $width;
+    public usize $height;
+    public usize $depth = 1;
+
+    internal const function abi() : AbiSize
+    {
+        return AbiSize($this->width as uint64, $this->height as uint64, $this->depth as uint64);
+    }
+}
+
+public struct Origin
+{
+    public usize $x = 0;
+    public usize $y = 0;
+    public usize $z = 0;
+}
+
+public struct Region
+{
+    public Origin $origin;
+    public Size $size;
+
+    internal const function abi() : AbiRegion
+    {
+        return AbiRegion(
+            AbiOrigin($this->origin->x as uint64, $this->origin->y as uint64, $this->origin->z as uint64),
+            $this->size->abi()
+        );
+    }
+}
+
+public struct Viewport
+{
+    public float64 $originX;
+    public float64 $originY;
+    public float64 $width;
+    public float64 $height;
+    public float64 $znear = 0.0;
+    public float64 $zfar = 1.0;
+
+    internal const function abi() : AbiViewport
+    {
+        return AbiViewport(
+            $this->originX,
+            $this->originY,
+            $this->width,
+            $this->height,
+            $this->znear,
+            $this->zfar
+        );
+    }
+}
+
+public struct ClearColor
+{
+    public float64 $red = 0.0;
+    public float64 $green = 0.0;
+    public float64 $blue = 0.0;
+    public float64 $alpha = 1.0;
+
+    internal const function abi() : AbiClearColor
+    {
+        return AbiClearColor($this->red, $this->green, $this->blue, $this->alpha);
+    }
+}
+
+public struct ScissorRect
+{
+    public uint32 $x;
+    public uint32 $y;
+    public uint32 $width;
+    public uint32 $height;
+
+    internal const function abi() : AbiScissor
+    {
+        return AbiScissor($this->x, $this->y, $this->width, $this->height);
+    }
+}
+
+internal struct AbiSize
+{
+    uint64 $width;
+    uint64 $height;
+    uint64 $depth;
+}
+
+internal struct AbiOrigin
+{
+    uint64 $x;
+    uint64 $y;
+    uint64 $z;
+}
+
+internal struct AbiRegion
+{
+    AbiOrigin $origin;
+    AbiSize $size;
+}
+
+internal struct AbiViewport
+{
+    float64 $originX;
+    float64 $originY;
+    float64 $width;
+    float64 $height;
+    float64 $znear;
+    float64 $zfar;
+}
+
+internal struct AbiClearColor
+{
+    float64 $r;
+    float64 $g;
+    float64 $b;
+    float64 $a;
+}
+
+internal struct AbiScissor
+{
+    uint32 $x;
+    uint32 $y;
+    uint32 $width;
+    uint32 $height;
+}
+
+internal struct AbiTextureDesc
+{
+    uint32 $textureType;
+    uint32 $pixelFormat;
+    uint64 $width;
+    uint64 $height;
+    uint64 $depth;
+    uint64 $mipmapLevelCount;
+    uint64 $sampleCount;
+    uint64 $arrayLength;
+    uint32 $usage;
+    uint32 $storageMode;
+}
+
+internal struct AbiSamplerDesc
+{
+    uint32 $minFilter;
+    uint32 $magFilter;
+    uint32 $mipFilter;
+    uint32 $sAddress;
+    uint32 $tAddress;
+    uint32 $rAddress;
+    uint32 $normalized;
+}
+
+internal struct AbiCompileOpts
+{
+    int32 $fastMath;
+    uint32 $languageVersion;
+}
+
+internal struct AbiVertexAttr
+{
+    uint32 $index;
+    uint32 $format;
+    uint32 $offset;
+    uint32 $bufferIndex;
+}
+
+internal struct AbiVertexLayout
+{
+    uint32 $index;
+    uint32 $stride;
+    uint32 $stepFunction;
+    uint32 $stepRate;
+}
+
+internal struct AbiVertexDesc
+{
+    AbiVertexAttr $attr0;
+    AbiVertexAttr $attr1;
+    AbiVertexAttr $attr2;
+    AbiVertexAttr $attr3;
+    AbiVertexAttr $attr4;
+    AbiVertexAttr $attr5;
+    AbiVertexAttr $attr6;
+    AbiVertexAttr $attr7;
+    uint32 $attrCount;
+    AbiVertexLayout $layout0;
+    AbiVertexLayout $layout1;
+    AbiVertexLayout $layout2;
+    AbiVertexLayout $layout3;
+    uint32 $layoutCount;
+}
+
+internal struct AbiRenderPipeline
+{
+    ptr<uint8> $vertexFunction;
+    ptr<uint8> $fragmentFunction;
+    uint32 $color0;
+    uint32 $color1;
+    uint32 $color2;
+    uint32 $color3;
+    uint32 $color4;
+    uint32 $color5;
+    uint32 $color6;
+    uint32 $color7;
+    uint32 $colorCount;
+    uint32 $depthFormat;
+    AbiVertexDesc $vertex;
+}
+
+internal struct AbiDepthStencil
+{
+    uint32 $compare;
+    int32 $depthWrite;
+}
+
+internal struct AbiColorAttach
+{
+    ptr<uint8> $texture;
+    uint32 $loadAction;
+    uint32 $storeAction;
+    AbiClearColor $clear;
+}
+
+internal struct AbiRenderPass
+{
+    AbiColorAttach $color0;
+    AbiColorAttach $color1;
+    AbiColorAttach $color2;
+    AbiColorAttach $color3;
+    AbiColorAttach $color4;
+    AbiColorAttach $color5;
+    AbiColorAttach $color6;
+    AbiColorAttach $color7;
+    uint32 $colorCount;
+    uint32 $pad0;
+    ptr<uint8> $depthTexture;
+    uint32 $depthLoad;
+    uint32 $depthStore;
+    float32 $depthClear;
+    uint32 $pad1;
+}

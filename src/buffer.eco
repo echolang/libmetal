@@ -1,0 +1,51 @@
+/**
+ * `id<MTLBuffer>`.
+ */
+
+namespace mtl;
+
+#[atomic]
+public class Buffer
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Buffer handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : Buffer?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return Buffer($id:$);
+    }
+
+    public const function length() : usize
+    {
+        return cBufferLength($this->raw()) as usize;
+    }
+
+    /**
+     * CPU pointer. Null for `private` storage.
+     */
+    public function contents() : ptr<uint8>
+    {
+        return cBufferContents($this->raw());
+    }
+}

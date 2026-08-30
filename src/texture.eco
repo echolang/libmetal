@@ -1,0 +1,94 @@
+/**
+ * `id<MTLTexture>` and the descriptor you build it from.
+ */
+
+namespace mtl;
+
+public struct TextureDescriptor
+{
+    public TextureType $textureType = .type2D;
+    public PixelFormat $pixelFormat;
+    public usize $width;
+    public usize $height = 1;
+    public usize $depth = 1;
+    public usize $mipmapLevelCount = 1;
+    public usize $sampleCount = 1;
+    public usize $arrayLength = 1;
+    public uint32 $usage = TEXTURE_USAGE_SHADER_READ;
+    public StorageMode $storageMode = .devicePrivate;
+
+    internal const function abi() : AbiTextureDesc
+    {
+        return AbiTextureDesc(
+            $this->textureType->value(),
+            $this->pixelFormat->value(),
+            $this->width as uint64,
+            $this->height as uint64,
+            $this->depth as uint64,
+            $this->mipmapLevelCount as uint64,
+            $this->sampleCount as uint64,
+            $this->arrayLength as uint64,
+            $this->usage,
+            $this->storageMode->value()
+        );
+    }
+}
+
+#[atomic]
+public class Texture
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Texture handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : Texture?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return Texture($id:$);
+    }
+
+    public const function width() : usize
+    {
+        return cTextureWidth($this->raw()) as usize;
+    }
+
+    public const function height() : usize
+    {
+        return cTextureHeight($this->raw()) as usize;
+    }
+
+    public function replace(Region $region, ptr<uint8> $bytes, usize $bytesPerRow, uint32 $mipmapLevel = 0) : void
+    {
+        cTextureReplace(
+            $this->raw(),
+            $region->origin->x as uint64,
+            $region->origin->y as uint64,
+            $region->origin->z as uint64,
+            $region->size->width as uint64,
+            $region->size->height as uint64,
+            $region->size->depth as uint64,
+            $mipmapLevel,
+            ptr<const uint8>($bytes:$),
+            $bytesPerRow as uint64
+        );
+    }
+}

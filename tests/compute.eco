@@ -1,0 +1,58 @@
+#[if: os == darwin]
+test compute_fill
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+
+    $src = "#include <metal_stdlib>\nusing namespace metal;\nkernel void fill(device uint *out [[buffer(0)]], uint gid [[thread_position_in_grid]]) { out[gid] = 42; }";
+    $compiled = $d->newLibrary(source: $src);
+
+    if ($compiled->failed()) {
+        mtl::Error $e = $compiled->failure();
+        assert($e->message()->contains('XPC') || $e->message()->contains('Compiler'));
+        return;
+    }
+
+    mtl::Library $lib = $compiled->unwrap();
+
+    mtl::Function $fn = guard $lib->newFunction('fill') else {
+        die('mtl: missing fill');
+    }
+
+    mtl::ComputePipelineState $ps = guard $d->newComputePipelineState($fn) else ($e) {
+        die($e->message());
+    }
+
+    mtl::Buffer $b = guard $d->newBuffer(4) else {
+        die('mtl: no buffer');
+    }
+
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+
+    mtl::ComputeCommandEncoder $enc = guard $cmd->computeCommandEncoder() else {
+        die('mtl: no compute encoder');
+    }
+
+    $enc->setComputePipelineState($ps);
+    $enc->setBuffer($b, index: 0);
+    $enc->dispatchThreads(mtl::Size(1, 1), mtl::Size(1, 1));
+    $enc->endEncoding();
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+
+    ptr<uint8> $p = $b->contents();
+    assert($p:$ != null);
+    assert($p:$[0] == 42);
+}
+#[end]

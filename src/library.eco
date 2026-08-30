@@ -1,0 +1,93 @@
+/**
+ * `id<MTLLibrary>` and `id<MTLFunction>`.
+ */
+
+namespace mtl;
+
+public struct CompileOptions
+{
+    public bool $fastMathEnabled = true;
+    public LanguageVersion $languageVersion = .default;
+
+    internal const function abi() : AbiCompileOpts
+    {
+        int32 $fast = 0;
+
+        if ($this->fastMathEnabled) {
+            $fast = 1;
+        }
+
+        return AbiCompileOpts($fast, $this->languageVersion->value());
+    }
+}
+
+#[atomic]
+public class Library
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Library handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : Library?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return Library($id:$);
+    }
+
+    public function newFunction(const string& $name) : Function?
+    {
+        return Function::adopt(cLibraryNewFunction($this->raw(), $name->cstr()));
+    }
+}
+
+#[atomic]
+public class Function
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Function handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : Function?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return Function($id:$);
+    }
+}

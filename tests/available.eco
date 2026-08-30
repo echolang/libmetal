@@ -1,0 +1,12 @@
+test available_is_defined
+{
+    bool $a = mtl::available();
+
+    #[if: os != darwin]
+    assert($a == false);
+    #[end]
+
+    #[if: os == darwin]
+    assert($a == true || $a == false);
+    #[end]
+}

@@ -1,0 +1,27 @@
+/*
+ * libmetal - Metal GPU bindings for Echo.
+ *
+ * A C ABI shim in Objective-C, Echo classes on top. Apple platforms only:
+ * macOS, iOS, tvOS. No AppKit, no UIKit. A consumer adds it with epm and
+ * nothing else.
+ */
+
+#[module: "libmetal"]
+#[version: "0.1.0"] // x-release-please-version
+#[epm::license: "MIT"]
+#[epm::description: "Metal GPU bindings for Echo"]
+
+#[if: os == darwin]
+#[sources: "src/*.eco"]
+#[cc: sources "c/*.m"]
+#[cc: flag "-fobjc-arc"]
+#[link: framework "Metal"]
+#[link: framework "QuartzCore"]
+#[link: framework "Foundation"]
+#[else]
+#[sources: "unsupported.eco"]
+#[end]
+
+#[target: test] {
+    #[sources: "tests/*.eco"]
+}

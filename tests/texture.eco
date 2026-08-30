@@ -1,0 +1,20 @@
+#[if: os == darwin]
+test texture_2d
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $desc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 8, $height: 4);
+    mtl::Texture $t = guard $d->newTexture($desc) else {
+        die('mtl: newTexture returned null');
+    }
+
+    assert($t->width() == 8);
+    assert($t->height() == 4);
+}
+#[end]

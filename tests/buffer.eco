@@ -1,0 +1,47 @@
+#[if: os == darwin]
+test buffer_roundtrip
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    mtl::Buffer $b = guard $d->newBuffer(16) else {
+        die('mtl: newBuffer returned null');
+    }
+
+    assert($b->length() == 16);
+
+    ptr<uint8> $p = $b->contents();
+    assert($p:$ != null);
+
+    $p:$[0] = 42;
+    $p:$[1] = 7;
+    assert($p:$[0] == 42);
+    assert($p:$[1] == 7);
+}
+
+test buffer_from_bytes
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    uint32 $v = 0x11223344;
+    mtl::Buffer $b = guard $d->newBuffer(bytes: ptr<uint8>(&$v), 4) else {
+        die('mtl: newBuffer(bytes:) returned null');
+    }
+
+    assert($b->length() == 4);
+    ptr<uint8> $p = $b->contents();
+    assert($p:$ != null);
+    assert($p:$[0] == 0x44);
+}
+#[end]

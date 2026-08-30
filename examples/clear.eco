@@ -1,0 +1,77 @@
+/*
+ * Open a GLFW window with no OpenGL context, attach a CAMetalLayer, clear.
+ *
+ *   echoc run --target clear -- --frames 120
+ */
+
+int32 $frames = guard parse_frames(std::env::argv()) else ($e) {
+    die($e);
+}
+
+if (!mtl::available()) {
+    die('no Metal device');
+}
+
+mtl::Device $device = guard mtl::Device::systemDefault() else {
+    die('systemDefault returned null');
+}
+
+if (glfw::init() != glfw::TRUE) {
+    die(glfw::error_message());
+}
+
+glfw::windowHint(glfw::CLIENT_API, glfw::NO_API);
+
+ptr<glfw::Window> $window = glfw::createWindow(800, 600, 'libmetal', null, null);
+
+if ($window:$ == null) {
+    glfw::terminate();
+    die(glfw::error_message());
+}
+
+mtl::Layer $layer = mtl::Layer(attachView: glfw::getCocoaWindow($window), $device);
+
+int32 $fbW = 0;
+int32 $fbH = 0;
+glfw::getFramebufferSize($window, &$fbW, &$fbH);
+$layer->setDrawableSize(mtl::Size($fbW as usize, $fbH as usize));
+
+mtl::CommandQueue $queue = guard $device->newCommandQueue() else {
+    die('no command queue');
+}
+
+int32 $frame = 0;
+$clear = mtl::ClearColor(0.25, 0.25, 0.25, 1.0);
+
+while ($frame < $frames && glfw::windowShouldClose($window) == glfw::FALSE) {
+    glfw::getFramebufferSize($window, &$fbW, &$fbH);
+    $layer->setDrawableSize(mtl::Size($fbW as usize, $fbH as usize));
+
+    mtl::Drawable $drawable = guard $layer->nextDrawable() else {
+        glfw::pollEvents();
+        continue;
+    }
+
+    mtl::Texture $tex = $drawable->texture();
+    $att = mtl::ColorAttachment($tex, $clearColor: $clear);
+    $pass = mtl::RenderPassDescriptor();
+    $pass->colorAttachments[] = $att;
+
+    mtl::CommandBuffer $cmd = guard $queue->commandBuffer() else {
+        die('no command buffer');
+    }
+
+    mtl::RenderCommandEncoder $enc = guard $cmd->renderCommandEncoder($pass) else {
+        die('no render encoder');
+    }
+
+    $enc->endEncoding();
+    $cmd->present($drawable);
+    $cmd->commit();
+
+    glfw::pollEvents();
+    $frame = $frame + 1;
+}
+
+glfw::destroyWindow($window);
+glfw::terminate();

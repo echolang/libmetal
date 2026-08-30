@@ -1,0 +1,24 @@
+#[if: os == darwin]
+test system_default_device
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    assert($d->name()->size() > 0);
+}
+
+test all_devices_nonempty
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    $all = mtl::Device::all();
+    assert($all->count() >= 1);
+}
+#[end]

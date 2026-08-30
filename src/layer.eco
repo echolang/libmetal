@@ -1,0 +1,148 @@
+/**
+ * `CAMetalLayer` and the drawable it vends.
+ *
+ * Three labelled constructors. None of them name AppKit or UIKit.
+ */
+
+namespace mtl;
+
+#[atomic]
+public class Layer
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Layer handle is null');
+    }
+
+    public constructor(Device $device, Size $drawableSize, PixelFormat $pixelFormat = .bgra8Unorm)
+    {
+        ptr<uint8> $p = cLayerCreate(
+            $device->raw(),
+            $drawableSize->width as uint64,
+            $drawableSize->height as uint64,
+            $pixelFormat->value()
+        );
+        $this->id:$ = live($p, 'Layer create returned null');
+    }
+
+    public constructor(fromPtr: ptr<uint8> $caMetalLayer)
+    {
+        ptr<uint8> $p = cLayerFromPtr($caMetalLayer);
+        $this->id:$ = live($p, 'Layer fromPtr was null');
+    }
+
+    public constructor(
+        attachView: ptr<uint8> $view,
+        Device $device,
+        PixelFormat $pixelFormat = .bgra8Unorm
+    )
+    {
+        ptr<uint8> $p = cLayerAttachView($device->raw(), $view, $pixelFormat->value());
+        $this->id:$ = live($p, 'Layer attachView returned null');
+    }
+
+    public function setDevice(Device $device) : void
+    {
+        cLayerSetDevice($this->raw(), $device->raw());
+    }
+
+    public function setPixelFormat(PixelFormat $format) : void
+    {
+        cLayerSetPixelFormat($this->raw(), $format->value());
+    }
+
+    public function setDrawableSize(Size $size) : void
+    {
+        cLayerSetDrawableSize($this->raw(), $size->width as uint64, $size->height as uint64);
+    }
+
+    public function drawableSize() : Size
+    {
+        uint64 $w = 0;
+        uint64 $h = 0;
+        cLayerGetDrawableSize($this->raw(), &$w, &$h);
+        return Size($w as usize, $h as usize);
+    }
+
+    public function setContentsScale(float64 $scale) : void
+    {
+        cLayerSetContentsScale($this->raw(), $scale);
+    }
+
+    public function contentsScale() : float64
+    {
+        return cLayerContentsScale($this->raw());
+    }
+
+    public function setFramebufferOnly(bool $only) : void
+    {
+        int32 $v = 0;
+
+        if ($only) {
+            $v = 1;
+        }
+
+        cLayerSetFramebufferOnly($this->raw(), $v);
+    }
+
+    public function nextDrawable() : Drawable?
+    {
+        return Drawable::adopt(cLayerNextDrawable($this->raw()));
+    }
+}
+
+public class Drawable
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Drawable handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : Drawable?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return Drawable($id:$);
+    }
+
+    public function texture() : Texture
+    {
+        ptr<uint8> $p = cDrawableTexture($this->raw());
+        Texture $t = guard Texture::adopt($p) else {
+            die('mtl: drawable has no texture');
+        }
+        return $t;
+    }
+}

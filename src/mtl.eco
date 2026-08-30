@@ -1,0 +1,43 @@
+/**
+ * libmetal. Metal GPU bindings. Apple platforms only.
+ *
+ * Objects are Echo classes over retained Metal ids. `available` is whether
+ * `MTLCreateSystemDefaultDevice` produced one.
+ */
+
+namespace mtl;
+
+internal const usize ERR_CAP = 512;
+
+internal function live(ptr<uint8> $p, string $what) : ptr<uint8>
+{
+    if ($p:$ == null) {
+        die("mtl: {$what}");
+    }
+
+    return $p:$;
+}
+
+internal function takeCString(ptr<uint8> $buf) : string
+{
+    if ($buf:$ == null) {
+        return '';
+    }
+
+    return str::from(ptr<const uint8>($buf:$));
+}
+
+/**
+ * True when this process has a Metal device.
+ */
+public function available() : bool
+{
+    ptr<uint8> $p = cDeviceDefault();
+
+    if ($p:$ == null) {
+        return false;
+    }
+
+    cRelease($p);
+    return true;
+}

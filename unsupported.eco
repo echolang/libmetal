@@ -1,0 +1,10 @@
+/**
+ * Non-Apple hosts. The rest of the surface is not compiled here.
+ */
+
+namespace mtl;
+
+public function available() : bool
+{
+    return false;
+}

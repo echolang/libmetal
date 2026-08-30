@@ -1,0 +1,68 @@
+/**
+ * `id<MTLSamplerState>` and its descriptor.
+ */
+
+namespace mtl;
+
+public struct SamplerDescriptor
+{
+    public SamplerMinMagFilter $minFilter = .nearest;
+    public SamplerMinMagFilter $magFilter = .nearest;
+    public SamplerMipFilter $mipFilter = .notMipmapped;
+    public SamplerAddressMode $sAddressMode = .clampToEdge;
+    public SamplerAddressMode $tAddressMode = .clampToEdge;
+    public SamplerAddressMode $rAddressMode = .clampToEdge;
+    public bool $normalizedCoordinates = true;
+
+    internal const function abi() : AbiSamplerDesc
+    {
+        int32 $norm = 0;
+
+        if ($this->normalizedCoordinates) {
+            $norm = 1;
+        }
+
+        return AbiSamplerDesc(
+            $this->minFilter->value(),
+            $this->magFilter->value(),
+            $this->mipFilter->value(),
+            $this->sAddressMode->value(),
+            $this->tAddressMode->value(),
+            $this->rAddressMode->value(),
+            $norm as uint32
+        );
+    }
+}
+
+#[atomic]
+public class SamplerState
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'SamplerState handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : SamplerState?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return SamplerState($id:$);
+    }
+}

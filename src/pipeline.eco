@@ -1,0 +1,251 @@
+/**
+ * Pipeline descriptors (Echo structs) and the compiled pipeline states.
+ */
+
+namespace mtl;
+
+public struct VertexAttribute
+{
+    public uint32 $index;
+    public VertexFormat $format;
+    public uint32 $offset;
+    public uint32 $bufferIndex;
+}
+
+public struct VertexBufferLayout
+{
+    public uint32 $index;
+    public uint32 $stride;
+    public VertexStepFunction $stepFunction = .perVertex;
+    public uint32 $stepRate = 1;
+}
+
+public struct VertexDescriptor
+{
+    public array<VertexAttribute> $attributes = array<VertexAttribute>();
+    public array<VertexBufferLayout> $layouts = array<VertexBufferLayout>();
+}
+
+public struct RenderPipelineDescriptor
+{
+    public Function $vertexFunction;
+    public Function? $fragmentFunction = null;
+    public array<PixelFormat> $colorPixelFormats = array<PixelFormat>();
+    public PixelFormat $depthPixelFormat = .invalid;
+    public VertexDescriptor $vertexDescriptor;
+
+    internal const function abi() : AbiRenderPipeline
+    {
+        return packRenderPipeline($this);
+    }
+}
+
+public struct DepthStencilDescriptor
+{
+    public CompareFunction $depthCompareFunction = .always;
+    public bool $depthWriteEnabled = false;
+
+    internal const function abi() : AbiDepthStencil
+    {
+        int32 $write = 0;
+
+        if ($this->depthWriteEnabled) {
+            $write = 1;
+        }
+
+        return AbiDepthStencil($this->depthCompareFunction->value(), $write);
+    }
+}
+
+internal function functionPtr(Function? $f) : ptr<uint8>
+{
+    Function $fn = guard $f else {
+        return null;
+    }
+
+    return $fn->raw();
+}
+
+internal function packAttr(const array<VertexAttribute>& $a, usize $i) : AbiVertexAttr
+{
+    if ($i >= $a->count()) {
+        return AbiVertexAttr(0, 0, 0, 0);
+    }
+
+    $v = $a[$i];
+    return AbiVertexAttr($v->index, $v->format->value(), $v->offset, $v->bufferIndex);
+}
+
+internal function packLayout(const array<VertexBufferLayout>& $a, usize $i) : AbiVertexLayout
+{
+    if ($i >= $a->count()) {
+        return AbiVertexLayout(0, 0, 0, 1);
+    }
+
+    $v = $a[$i];
+    return AbiVertexLayout($v->index, $v->stride, $v->stepFunction->value(), $v->stepRate);
+}
+
+internal function packVertexDesc(const VertexDescriptor& $d) : AbiVertexDesc
+{
+    usize $na = $d->attributes->count();
+    usize $nl = $d->layouts->count();
+
+    if ($na > 8) {
+        $na = 8;
+    }
+
+    if ($nl > 4) {
+        $nl = 4;
+    }
+
+    return AbiVertexDesc(
+        packAttr($d->attributes, 0),
+        packAttr($d->attributes, 1),
+        packAttr($d->attributes, 2),
+        packAttr($d->attributes, 3),
+        packAttr($d->attributes, 4),
+        packAttr($d->attributes, 5),
+        packAttr($d->attributes, 6),
+        packAttr($d->attributes, 7),
+        $na as uint32,
+        packLayout($d->layouts, 0),
+        packLayout($d->layouts, 1),
+        packLayout($d->layouts, 2),
+        packLayout($d->layouts, 3),
+        $nl as uint32
+    );
+}
+
+internal function packColorFormat(const array<PixelFormat>& $a, usize $i) : uint32
+{
+    if ($i >= $a->count()) {
+        return 0;
+    }
+
+    return $a[$i]->value();
+}
+
+internal function packRenderPipeline(const RenderPipelineDescriptor& $d) : AbiRenderPipeline
+{
+    usize $n = $d->colorPixelFormats->count();
+
+    if ($n > 8) {
+        $n = 8;
+    }
+
+    return AbiRenderPipeline(
+        $d->vertexFunction->raw(),
+        functionPtr($d->fragmentFunction),
+        packColorFormat($d->colorPixelFormats, 0),
+        packColorFormat($d->colorPixelFormats, 1),
+        packColorFormat($d->colorPixelFormats, 2),
+        packColorFormat($d->colorPixelFormats, 3),
+        packColorFormat($d->colorPixelFormats, 4),
+        packColorFormat($d->colorPixelFormats, 5),
+        packColorFormat($d->colorPixelFormats, 6),
+        packColorFormat($d->colorPixelFormats, 7),
+        $n as uint32,
+        $d->depthPixelFormat->value(),
+        packVertexDesc($d->vertexDescriptor)
+    );
+}
+
+#[atomic]
+public class RenderPipelineState
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'RenderPipelineState handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : RenderPipelineState?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return RenderPipelineState($id:$);
+    }
+}
+
+#[atomic]
+public class ComputePipelineState
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'ComputePipelineState handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : ComputePipelineState?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return ComputePipelineState($id:$);
+    }
+}
+
+#[atomic]
+public class DepthStencilState
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'DepthStencilState handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : DepthStencilState?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return DepthStencilState($id:$);
+    }
+}

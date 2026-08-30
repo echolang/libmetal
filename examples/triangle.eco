@@ -1,0 +1,102 @@
+/*
+ * A triangle. GLFW window, no OpenGL, one Metal pipeline.
+ *
+ *   echoc run --target triangle -- --frames 120
+ */
+
+int32 $frames = guard parse_frames(std::env::argv()) else ($e) {
+    die($e);
+}
+
+if (!mtl::available()) {
+    die('no Metal device');
+}
+
+mtl::Device $device = guard mtl::Device::systemDefault() else {
+    die('systemDefault returned null');
+}
+
+$msl = "#include <metal_stdlib>\nusing namespace metal;\nstruct V { float4 pos [[position]]; float3 color; };\nvertex V vs(uint vid [[vertex_id]]) { float2 p[3] = { float2(-0.6,-0.5), float2(0.6,-0.5), float2(0.0,0.6) }; float3 c[3] = { float3(1,0.2,0.2), float3(0.2,1,0.2), float3(0.2,0.4,1) }; V o; o.pos = float4(p[vid], 0, 1); o.color = c[vid]; return o; }\nfragment float4 fs(V in [[stage_in]]) { return float4(in.color, 1); }\n";
+
+mtl::Library $lib = guard $device->newLibrary(source: $msl) else ($e) {
+    die($e->message());
+}
+
+mtl::Function $vs = guard $lib->newFunction('vs') else {
+    die('missing vs');
+}
+
+mtl::Function $fs = guard $lib->newFunction('fs') else {
+    die('missing fs');
+}
+
+$vd = mtl::VertexDescriptor();
+$pdesc = mtl::RenderPipelineDescriptor($vs, $vertexDescriptor: $vd);
+$pdesc->fragmentFunction = $fs;
+$pdesc->colorPixelFormats[] = mtl::PixelFormat::bgra8Unorm;
+
+mtl::RenderPipelineState $pipeline = guard $device->newRenderPipelineState($pdesc) else ($e) {
+    die($e->message());
+}
+
+if (glfw::init() != glfw::TRUE) {
+    die(glfw::error_message());
+}
+
+glfw::windowHint(glfw::CLIENT_API, glfw::NO_API);
+
+ptr<glfw::Window> $window = glfw::createWindow(800, 600, 'libmetal triangle', null, null);
+
+if ($window:$ == null) {
+    glfw::terminate();
+    die(glfw::error_message());
+}
+
+mtl::Layer $layer = mtl::Layer(attachView: glfw::getCocoaWindow($window), $device);
+
+int32 $fbW = 0;
+int32 $fbH = 0;
+glfw::getFramebufferSize($window, &$fbW, &$fbH);
+$layer->setDrawableSize(mtl::Size($fbW as usize, $fbH as usize));
+
+mtl::CommandQueue $queue = guard $device->newCommandQueue() else {
+    die('no command queue');
+}
+
+int32 $frame = 0;
+$clear = mtl::ClearColor(0.08, 0.08, 0.1, 1.0);
+
+while ($frame < $frames && glfw::windowShouldClose($window) == glfw::FALSE) {
+    glfw::getFramebufferSize($window, &$fbW, &$fbH);
+    $layer->setDrawableSize(mtl::Size($fbW as usize, $fbH as usize));
+
+    mtl::Drawable $drawable = guard $layer->nextDrawable() else {
+        glfw::pollEvents();
+        continue;
+    }
+
+    mtl::Texture $tex = $drawable->texture();
+    $att = mtl::ColorAttachment($tex, $clearColor: $clear);
+    $pass = mtl::RenderPassDescriptor();
+    $pass->colorAttachments[] = $att;
+
+    mtl::CommandBuffer $cmd = guard $queue->commandBuffer() else {
+        die('no command buffer');
+    }
+
+    mtl::RenderCommandEncoder $enc = guard $cmd->renderCommandEncoder($pass) else {
+        die('no render encoder');
+    }
+
+    $enc->setRenderPipelineState($pipeline);
+    $enc->drawPrimitives(.triangle, 0, 3);
+    $enc->endEncoding();
+    $cmd->present($drawable);
+    $cmd->commit();
+
+    glfw::pollEvents();
+    $frame = $frame + 1;
+}
+
+glfw::destroyWindow($window);
+glfw::terminate();

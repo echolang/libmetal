@@ -1,0 +1,24 @@
+/**
+ * Why a Metal call did not produce the object you asked for.
+ *
+ * An enum, so `guard` / `match` is the call site. `other` is a message
+ * Metal did not classify.
+ */
+
+namespace mtl;
+
+public enum Error
+{
+    case compile(string $message);
+    case pipeline(string $message);
+    case other(string $message);
+
+    const function message() : string
+    {
+        return match ($this) {
+            Error::compile($message) => $message,
+            Error::pipeline($message) => $message,
+            Error::other($message) => $message,
+        };
+    }
+}

@@ -1,0 +1,204 @@
+/**
+ * `id<MTLDevice>`. The GPU. Parameterless statics, because there is
+ * nothing to label: `systemDefault` and `all`.
+ */
+
+namespace mtl;
+
+#[atomic]
+public class Device
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'Device handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : Device?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return Device($id:$);
+    }
+
+    public static function systemDefault() : Device?
+    {
+        return Device::adopt(cDeviceDefault());
+    }
+
+    public static function all() : array<Device>
+    {
+        array<Device> $out = array<Device>();
+        uint64 $n = cDeviceCount();
+        uint64 $i = 0;
+
+        while ($i < $n) {
+            Device $d = guard Device::adopt(cDeviceAt($i)) else {
+                $i = $i + 1;
+                continue;
+            }
+            $out[] = $d;
+            $i = $i + 1;
+        }
+
+        return $out;
+    }
+
+    public const function name() : string
+    {
+        ptr<uint8> $buf = mem::alloc<uint8>(ERR_CAP);
+        $buf:$[0] = 0;
+        cDeviceName($this->raw(), $buf, ERR_CAP);
+        $name = takeCString($buf);
+        mem::free<uint8>($buf);
+        return $name;
+    }
+
+    public function newCommandQueue(string? $label = null) : CommandQueue?
+    {
+        string $text = guard $label else {
+            return CommandQueue::adopt(cDeviceNewQueue($this->raw(), null));
+        }
+
+        return CommandQueue::adopt(cDeviceNewQueue($this->raw(), $text->cstr()));
+    }
+
+    public function newBuffer(usize $length, ResourceOptions $options = .shared) : Buffer?
+    {
+        return Buffer::adopt(cDeviceNewBuffer($this->raw(), $length as uint64, $options->value()));
+    }
+
+    public function newBuffer(
+        bytes: ptr<uint8> $bytes,
+        usize $length,
+        ResourceOptions $options = .shared
+    ) : Buffer?
+    {
+        return Buffer::adopt(
+            cDeviceNewBufferBytes($this->raw(), ptr<const uint8>($bytes:$), $length as uint64, $options->value())
+        );
+    }
+
+    public function newTexture(const TextureDescriptor& $desc) : Texture?
+    {
+        $abi = $desc->abi();
+        return Texture::adopt(cDeviceNewTexture($this->raw(), &$abi));
+    }
+
+    public function newSamplerState(const SamplerDescriptor& $desc) : SamplerState?
+    {
+        $abi = $desc->abi();
+        return SamplerState::adopt(cDeviceNewSampler($this->raw(), &$abi));
+    }
+
+    public function newLibrary(source: const string& $msl) : result<Library, Error>
+    {
+        return $this->newLibrary(source: $msl, CompileOptions(true, .default));
+    }
+
+    public function newLibrary(source: const string& $msl, CompileOptions $options) : result<Library, Error>
+    {
+        $opts = $options->abi();
+        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
+        $err:$[0] = 0;
+        ptr<uint8> $p = cDeviceNewLibrarySource($this->raw(), $msl->cstr(), &$opts, $err, ERR_CAP);
+
+        if ($p:$ == null) {
+            $msg = takeCString($err);
+            mem::free<uint8>($err);
+            return .error(Error::compile($msg));
+        }
+
+        mem::free<uint8>($err);
+        Library $lib = guard Library::adopt($p) else {
+            return .error(Error::compile('library pointer was null'));
+        }
+        return .ok($lib);
+    }
+
+    public function newLibrary(data: ptr<uint8> $bytes, usize $length) : result<Library, Error>
+    {
+        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
+        $err:$[0] = 0;
+        ptr<uint8> $p = cDeviceNewLibraryData(
+            $this->raw(),
+            ptr<const uint8>($bytes:$),
+            $length as uint64,
+            $err,
+            ERR_CAP
+        );
+
+        if ($p:$ == null) {
+            $msg = takeCString($err);
+            mem::free<uint8>($err);
+            return .error(Error::compile($msg));
+        }
+
+        mem::free<uint8>($err);
+        Library $lib = guard Library::adopt($p) else {
+            return .error(Error::compile('library pointer was null'));
+        }
+        return .ok($lib);
+    }
+
+    public function newRenderPipelineState(const RenderPipelineDescriptor& $desc) : result<RenderPipelineState, Error>
+    {
+        $abi = $desc->abi();
+        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
+        $err:$[0] = 0;
+        ptr<uint8> $p = cDeviceNewRenderPipeline($this->raw(), &$abi, $err, ERR_CAP);
+
+        if ($p:$ == null) {
+            $msg = takeCString($err);
+            mem::free<uint8>($err);
+            return .error(Error::pipeline($msg));
+        }
+
+        mem::free<uint8>($err);
+        RenderPipelineState $ps = guard RenderPipelineState::adopt($p) else {
+            return .error(Error::pipeline('pipeline pointer was null'));
+        }
+        return .ok($ps);
+    }
+
+    public function newComputePipelineState(Function $function) : result<ComputePipelineState, Error>
+    {
+        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
+        $err:$[0] = 0;
+        ptr<uint8> $p = cDeviceNewComputePipeline($this->raw(), $function->raw(), $err, ERR_CAP);
+
+        if ($p:$ == null) {
+            $msg = takeCString($err);
+            mem::free<uint8>($err);
+            return .error(Error::pipeline($msg));
+        }
+
+        mem::free<uint8>($err);
+        ComputePipelineState $ps = guard ComputePipelineState::adopt($p) else {
+            return .error(Error::pipeline('pipeline pointer was null'));
+        }
+        return .ok($ps);
+    }
+
+    public function newDepthStencilState(const DepthStencilDescriptor& $desc) : DepthStencilState?
+    {
+        $abi = $desc->abi();
+        return DepthStencilState::adopt(cDeviceNewDepthStencil($this->raw(), &$abi));
+    }
+}

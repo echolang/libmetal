@@ -1,0 +1,464 @@
+/**
+ * Command buffers and the three encoders. Encoder destructors call
+ * `endEncoding` if you forgot.
+ */
+
+namespace mtl;
+
+public struct ColorAttachment
+{
+    public Texture $texture;
+    public LoadAction $loadAction = .clear;
+    public StoreAction $storeAction = .store;
+    public ClearColor $clearColor;
+}
+
+public struct RenderPassDescriptor
+{
+    public array<ColorAttachment> $colorAttachments = array<ColorAttachment>();
+    public Texture? $depthTexture = null;
+    public LoadAction $depthLoadAction = .clear;
+    public StoreAction $depthStoreAction = .dontCare;
+    public float32 $depthClear = 1.0f;
+
+    internal const function abi() : AbiRenderPass
+    {
+        return packRenderPass($this);
+    }
+}
+
+internal function packColorAttach(const array<ColorAttachment>& $a, usize $i) : AbiColorAttach
+{
+    if ($i >= $a->count()) {
+        return AbiColorAttach(null, 0, 0, AbiClearColor(0.0, 0.0, 0.0, 1.0));
+    }
+
+    $c = $a[$i];
+    return AbiColorAttach(
+        $c->texture->raw(),
+        $c->loadAction->value(),
+        $c->storeAction->value(),
+        $c->clearColor->abi()
+    );
+}
+
+internal function packRenderPass(const RenderPassDescriptor& $d) : AbiRenderPass
+{
+    usize $n = $d->colorAttachments->count();
+
+    if ($n > 8) {
+        $n = 8;
+    }
+
+    Texture $dt = guard $d->depthTexture else {
+        return AbiRenderPass(
+            packColorAttach($d->colorAttachments, 0),
+            packColorAttach($d->colorAttachments, 1),
+            packColorAttach($d->colorAttachments, 2),
+            packColorAttach($d->colorAttachments, 3),
+            packColorAttach($d->colorAttachments, 4),
+            packColorAttach($d->colorAttachments, 5),
+            packColorAttach($d->colorAttachments, 6),
+            packColorAttach($d->colorAttachments, 7),
+            $n as uint32,
+            0,
+            null,
+            $d->depthLoadAction->value(),
+            $d->depthStoreAction->value(),
+            $d->depthClear,
+            0
+        );
+    }
+
+    return AbiRenderPass(
+        packColorAttach($d->colorAttachments, 0),
+        packColorAttach($d->colorAttachments, 1),
+        packColorAttach($d->colorAttachments, 2),
+        packColorAttach($d->colorAttachments, 3),
+        packColorAttach($d->colorAttachments, 4),
+        packColorAttach($d->colorAttachments, 5),
+        packColorAttach($d->colorAttachments, 6),
+        packColorAttach($d->colorAttachments, 7),
+        $n as uint32,
+        0,
+        $dt->raw(),
+        $d->depthLoadAction->value(),
+        $d->depthStoreAction->value(),
+        $d->depthClear,
+        0
+    );
+}
+
+public class CommandBuffer
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'CommandBuffer handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : CommandBuffer?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return CommandBuffer($id:$);
+    }
+
+    public function commit() : void
+    {
+        cCommandCommit($this->raw());
+    }
+
+    public function waitUntilCompleted() : void
+    {
+        cCommandWait($this->raw());
+    }
+
+    public function present(Drawable $drawable) : void
+    {
+        cCommandPresent($this->raw(), $drawable->raw());
+    }
+
+    public function renderCommandEncoder(const RenderPassDescriptor& $pass) : RenderCommandEncoder?
+    {
+        $abi = $pass->abi();
+        return RenderCommandEncoder::adopt(cCommandRender($this->raw(), &$abi));
+    }
+
+    public function blitCommandEncoder() : BlitCommandEncoder?
+    {
+        return BlitCommandEncoder::adopt(cCommandBlit($this->raw()));
+    }
+
+    public function computeCommandEncoder() : ComputeCommandEncoder?
+    {
+        return ComputeCommandEncoder::adopt(cCommandCompute($this->raw()));
+    }
+}
+
+public class RenderCommandEncoder
+{
+    private ptr<uint8> $id;
+    private bool $ended;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+        $this->ended = false;
+    }
+
+    destructor()
+    {
+        if (!$this->ended && $this->id:$ != null) {
+            cRenderEnd($this->id);
+            $this->ended = true;
+        }
+
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        if ($this->ended) {
+            die('mtl: render encoder used after endEncoding');
+        }
+
+        return live($this->id, 'RenderCommandEncoder handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : RenderCommandEncoder?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return RenderCommandEncoder($id:$);
+    }
+
+    public function endEncoding() : void
+    {
+        if ($this->ended) {
+            return;
+        }
+
+        cRenderEnd($this->raw());
+        $this->ended = true;
+    }
+
+    public function setRenderPipelineState(RenderPipelineState $pipeline) : void
+    {
+        cRenderSetPipeline($this->raw(), $pipeline->raw());
+    }
+
+    public function setDepthStencilState(DepthStencilState $state) : void
+    {
+        cRenderSetDepthStencil($this->raw(), $state->raw());
+    }
+
+    public function setVertexBuffer(Buffer $buffer, uint32 $offset = 0, index: uint32 $index) : void
+    {
+        cRenderSetVertexBuffer($this->raw(), $buffer->raw(), $offset as uint64, $index);
+    }
+
+    public function setFragmentBuffer(Buffer $buffer, uint32 $offset = 0, index: uint32 $index) : void
+    {
+        cRenderSetFragmentBuffer($this->raw(), $buffer->raw(), $offset as uint64, $index);
+    }
+
+    public function setVertexBytes<T>(const T& $data, index: uint32 $index) : void
+    {
+        ptr<uint8> $p = &$data;
+        cRenderSetVertexBytes($this->raw(), ptr<const uint8>($p:$), mem::size<T>() as uint64, $index);
+    }
+
+    public function setFragmentBytes<T>(const T& $data, index: uint32 $index) : void
+    {
+        ptr<uint8> $p = &$data;
+        cRenderSetFragmentBytes($this->raw(), ptr<const uint8>($p:$), mem::size<T>() as uint64, $index);
+    }
+
+    public function setFragmentTexture(Texture $texture, index: uint32 $index) : void
+    {
+        cRenderSetFragmentTexture($this->raw(), $texture->raw(), $index);
+    }
+
+    public function setFragmentSamplerState(SamplerState $sampler, index: uint32 $index) : void
+    {
+        cRenderSetFragmentSampler($this->raw(), $sampler->raw(), $index);
+    }
+
+    public function setViewport(Viewport $viewport) : void
+    {
+        cRenderSetViewport(
+            $this->raw(),
+            $viewport->originX,
+            $viewport->originY,
+            $viewport->width,
+            $viewport->height,
+            $viewport->znear,
+            $viewport->zfar
+        );
+    }
+
+    public function setScissorRect(ScissorRect $rect) : void
+    {
+        cRenderSetScissor($this->raw(), $rect->x, $rect->y, $rect->width, $rect->height);
+    }
+
+    public function setCullMode(CullMode $mode) : void
+    {
+        cRenderSetCull($this->raw(), $mode->value());
+    }
+
+    public function setFrontFacing(Winding $winding) : void
+    {
+        cRenderSetWinding($this->raw(), $winding->value());
+    }
+
+    public function drawPrimitives(
+        PrimitiveType $type,
+        uint32 $vertexStart,
+        uint32 $vertexCount,
+        uint32 $instanceCount = 1
+    ) : void
+    {
+        cRenderDraw($this->raw(), $type->value(), $vertexStart, $vertexCount, $instanceCount);
+    }
+
+    public function drawIndexedPrimitives(
+        PrimitiveType $type,
+        uint32 $indexCount,
+        IndexType $indexType,
+        Buffer $indexBuffer,
+        uint32 $indexBufferOffset = 0,
+        uint32 $instanceCount = 1
+    ) : void
+    {
+        cRenderDrawIndexed(
+            $this->raw(),
+            $type->value(),
+            $indexCount,
+            $indexType->value(),
+            $indexBuffer->raw(),
+            $indexBufferOffset as uint64,
+            $instanceCount
+        );
+    }
+}
+
+public class BlitCommandEncoder
+{
+    private ptr<uint8> $id;
+    private bool $ended;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+        $this->ended = false;
+    }
+
+    destructor()
+    {
+        if (!$this->ended && $this->id:$ != null) {
+            cBlitEnd($this->id);
+            $this->ended = true;
+        }
+
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        if ($this->ended) {
+            die('mtl: blit encoder used after endEncoding');
+        }
+
+        return live($this->id, 'BlitCommandEncoder handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : BlitCommandEncoder?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return BlitCommandEncoder($id:$);
+    }
+
+    public function endEncoding() : void
+    {
+        if ($this->ended) {
+            return;
+        }
+
+        cBlitEnd($this->raw());
+        $this->ended = true;
+    }
+
+    public function copyFromBuffer(
+        Buffer $source,
+        usize $sourceOffset,
+        Buffer $destination,
+        usize $destinationOffset,
+        usize $size
+    ) : void
+    {
+        cBlitCopyBuffer(
+            $this->raw(),
+            $source->raw(),
+            $sourceOffset as uint64,
+            $destination->raw(),
+            $destinationOffset as uint64,
+            $size as uint64
+        );
+    }
+}
+
+public class ComputeCommandEncoder
+{
+    private ptr<uint8> $id;
+    private bool $ended;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+        $this->ended = false;
+    }
+
+    destructor()
+    {
+        if (!$this->ended && $this->id:$ != null) {
+            cComputeEnd($this->id);
+            $this->ended = true;
+        }
+
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        if ($this->ended) {
+            die('mtl: compute encoder used after endEncoding');
+        }
+
+        return live($this->id, 'ComputeCommandEncoder handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : ComputeCommandEncoder?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return ComputeCommandEncoder($id:$);
+    }
+
+    public function endEncoding() : void
+    {
+        if ($this->ended) {
+            return;
+        }
+
+        cComputeEnd($this->raw());
+        $this->ended = true;
+    }
+
+    public function setComputePipelineState(ComputePipelineState $pipeline) : void
+    {
+        cComputeSetPipeline($this->raw(), $pipeline->raw());
+    }
+
+    public function setBuffer(Buffer $buffer, uint32 $offset = 0, index: uint32 $index) : void
+    {
+        cComputeSetBuffer($this->raw(), $buffer->raw(), $offset as uint64, $index);
+    }
+
+    public function setBytes<T>(const T& $data, index: uint32 $index) : void
+    {
+        ptr<uint8> $p = &$data;
+        cComputeSetBytes($this->raw(), ptr<const uint8>($p:$), mem::size<T>() as uint64, $index);
+    }
+
+    public function setTexture(Texture $texture, index: uint32 $index) : void
+    {
+        cComputeSetTexture($this->raw(), $texture->raw(), $index);
+    }
+
+    public function dispatchThreads(Size $threadsPerGrid, Size $threadsPerThreadgroup) : void
+    {
+        cComputeDispatch(
+            $this->raw(),
+            $threadsPerGrid->width as uint64,
+            $threadsPerGrid->height as uint64,
+            $threadsPerGrid->depth as uint64,
+            $threadsPerThreadgroup->width as uint64,
+            $threadsPerThreadgroup->height as uint64,
+            $threadsPerThreadgroup->depth as uint64
+        );
+    }
+}

@@ -1,0 +1,56 @@
+/**
+ * GPU-free backing values. Apple's numbers, not ours.
+ */
+
+#[if: os == darwin]
+test pixel_formats
+{
+    assert(mtl::PixelFormat::bgra8Unorm->value() == 80);
+    assert(mtl::PixelFormat::rgba8Unorm->value() == 70);
+    assert(mtl::PixelFormat::depth32Float->value() == 252);
+    assert(mtl::PixelFormat::depth32Float_stencil8->value() == 260);
+    assert(mtl::PixelFormat::astc4x4Srgb->value() == 186);
+    assert(mtl::PixelFormat::bc1Rgba->value() == 130);
+}
+
+test storage_and_resource_options
+{
+    assert(mtl::StorageMode::shared->value() == 0);
+    assert(mtl::StorageMode::managed->value() == 1);
+    assert(mtl::StorageMode::devicePrivate->value() == 2);
+    assert(mtl::StorageMode::memoryless->value() == 3);
+    assert(mtl::ResourceOptions::shared->value() == 0);
+    assert(mtl::ResourceOptions::managed->value() == 16);
+    assert(mtl::ResourceOptions::devicePrivate->value() == 32);
+    assert(mtl::ResourceOptions::memoryless->value() == 48);
+}
+
+test primitive_and_load
+{
+    assert(mtl::PrimitiveType::triangle->value() == 3);
+    assert(mtl::LoadAction::clear->value() == 2);
+    assert(mtl::StoreAction::store->value() == 1);
+    assert(mtl::IndexType::uint16->value() == 0);
+    assert(mtl::IndexType::uint32->value() == 1);
+}
+
+test language_version
+{
+    assert(mtl::LanguageVersion::v2_4->value() == 131076);
+    assert(mtl::LanguageVersion::v3_0->value() == 196608);
+    assert(mtl::LanguageVersion::default->value() == 0);
+}
+
+test texture_usage_bits
+{
+    assert(mtl::TEXTURE_USAGE_SHADER_READ == 1);
+    assert(mtl::TEXTURE_USAGE_RENDER_TARGET == 4);
+}
+
+test error_message
+{
+    $e = mtl::Error::compile('bad msl');
+    assert($e->message() == 'bad msl');
+    assert("{$e}" == 'bad msl');
+}
+#[end]

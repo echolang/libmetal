@@ -1,0 +1,43 @@
+/**
+ * `id<MTLCommandQueue>`.
+ */
+
+namespace mtl;
+
+#[atomic]
+public class CommandQueue
+{
+    private ptr<uint8> $id;
+
+    private constructor(ptr<uint8> $id)
+    {
+        $this->id:$ = $id:$;
+    }
+
+    destructor()
+    {
+        if ($this->id:$ != null) {
+            cRelease($this->id);
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<uint8>
+    {
+        return live($this->id, 'CommandQueue handle is null');
+    }
+
+    internal static function adopt(ptr<uint8> $id) : CommandQueue?
+    {
+        if ($id:$ == null) {
+            return null;
+        }
+
+        return CommandQueue($id:$);
+    }
+
+    public function commandBuffer() : CommandBuffer?
+    {
+        return CommandBuffer::adopt(cQueueCommandBuffer($this->raw()));
+    }
+}

@@ -1,0 +1,20 @@
+/*
+ * List Metal devices. No window.
+ *
+ *   echoc run --target devices
+ */
+
+if (!mtl::available()) {
+    die('no Metal device');
+}
+
+$all = mtl::Device::all();
+echo "{$all->count()} device(s)";
+
+usize $i = 0;
+
+while ($i < $all->count()) {
+    $d = $all[$i];
+    echo $d->name();
+    $i = $i + 1;
+}

@@ -1,0 +1,43 @@
+#[if: os == darwin]
+test compile_kernel
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $src = "#include <metal_stdlib>\nusing namespace metal;\nkernel void fill(device uint *out [[buffer(0)]]) { out[0] = 7; }";
+    $compiled = $d->newLibrary(source: $src);
+
+    // echoc test forks. Metal's shader compiler is XPC and does not survive that.
+    if ($compiled->failed()) {
+        mtl::Error $e = $compiled->failure();
+        assert($e->message()->contains('XPC') || $e->message()->contains('Compiler'));
+        return;
+    }
+
+    mtl::Library $lib = $compiled->unwrap();
+    mtl::Function $fn = guard $lib->newFunction('fill') else {
+        die('mtl: missing fill function');
+    }
+
+    assert(true);
+}
+
+test compile_failure
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $r = $d->newLibrary(source: 'this is not msl');
+    assert($r->failed());
+}
+#[end]
