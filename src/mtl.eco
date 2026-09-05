@@ -9,13 +9,18 @@ namespace mtl;
 
 internal const usize ERR_CAP = 512;
 
-internal function live(ptr<uint8> $p, string $what) : ptr<uint8>
+internal function live<T>(ptr<T> $p, string $what) : ptr<T>
 {
-    if ($p:$ == null) {
+    if ($p == null) {
         die("mtl: {$what}");
     }
 
-    return $p:$;
+    return $p;
+}
+
+internal function asObj<T>(ptr<T> $p) : ptr<uint8>
+{
+    return $p:$ as ptr<uint8>;
 }
 
 internal function takeCString(ptr<uint8> $buf) : string
@@ -27,17 +32,29 @@ internal function takeCString(ptr<uint8> $buf) : string
     return str::from(ptr<const uint8>($buf:$));
 }
 
+internal function errSpare(string& $err) : ptr<uint8>
+{
+    $err->reserve(ERR_CAP);
+    ptr<uint8> $p = $err->spare();
+
+    if ($p:$ != null) {
+        $p:$[0] = 0;
+    }
+
+    return $err->spare();
+}
+
 /**
  * True when this process has a Metal device.
  */
 public function available() : bool
 {
-    ptr<uint8> $p = cDeviceDefault();
+    ptr<mtl_device> $p = cDeviceDefault();
 
-    if ($p:$ == null) {
+    if ($p == null) {
         return false;
     }
 
-    cRelease($p);
+    cRelease(asObj($p));
     return true;
 }

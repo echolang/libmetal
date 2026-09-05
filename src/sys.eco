@@ -8,58 +8,75 @@
 namespace mtl;
 
 internal extern {
+    struct mtl_device;
+    struct mtl_queue;
+    struct mtl_buffer;
+    struct mtl_texture;
+    struct mtl_sampler;
+    struct mtl_library;
+    struct mtl_function;
+    struct mtl_render_pipeline;
+    struct mtl_compute_pipeline;
+    struct mtl_depth_stencil;
+    struct mtl_command_buffer;
+    struct mtl_render_encoder;
+    struct mtl_blit_encoder;
+    struct mtl_compute_encoder;
+    struct mtl_layer;
+    struct mtl_drawable;
+
     function mtl_retain as cRetain(ptr<uint8> $obj) : void;
     function mtl_release as cRelease(ptr<uint8> $obj) : void;
 
-    function mtl_device_default as cDeviceDefault() : ptr<uint8>;
+    function mtl_device_default as cDeviceDefault() : ptr<mtl_device>;
     function mtl_device_count as cDeviceCount() : uint64;
-    function mtl_device_at as cDeviceAt(uint64 $i) : ptr<uint8>;
-    function mtl_device_name as cDeviceName(ptr<uint8> $device, ptr<uint8> $buf, usize $cap) : void;
-    function mtl_device_new_queue as cDeviceNewQueue(ptr<uint8> $device, ptr<const uint8> $label) : ptr<uint8>;
-    function mtl_device_new_buffer as cDeviceNewBuffer(ptr<uint8> $device, uint64 $length, uint32 $options) : ptr<uint8>;
+    function mtl_device_at as cDeviceAt(uint64 $i) : ptr<mtl_device>;
+    function mtl_device_name as cDeviceName(ptr<mtl_device> $device, ptr<uint8> $buf, usize $cap) : void;
+    function mtl_device_new_queue as cDeviceNewQueue(ptr<mtl_device> $device, ptr<const uint8> $label) : ptr<mtl_queue>;
+    function mtl_device_new_buffer as cDeviceNewBuffer(ptr<mtl_device> $device, uint64 $length, uint32 $options) : ptr<mtl_buffer>;
     function mtl_device_new_buffer_bytes as cDeviceNewBufferBytes(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         ptr<const uint8> $bytes,
         uint64 $length,
         uint32 $options
-    ) : ptr<uint8>;
-    function mtl_device_new_texture as cDeviceNewTexture(ptr<uint8> $device, ptr<const AbiTextureDesc> $desc) : ptr<uint8>;
-    function mtl_device_new_sampler as cDeviceNewSampler(ptr<uint8> $device, ptr<const AbiSamplerDesc> $desc) : ptr<uint8>;
+    ) : ptr<mtl_buffer>;
+    function mtl_device_new_texture as cDeviceNewTexture(ptr<mtl_device> $device, ptr<const AbiTextureDesc> $desc) : ptr<mtl_texture>;
+    function mtl_device_new_sampler as cDeviceNewSampler(ptr<mtl_device> $device, ptr<const AbiSamplerDesc> $desc) : ptr<mtl_sampler>;
     function mtl_device_new_library_source as cDeviceNewLibrarySource(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         ptr<const uint8> $source,
         ptr<const AbiCompileOpts> $opts,
         ptr<uint8> $err,
         usize $errCap
-    ) : ptr<uint8>;
+    ) : ptr<mtl_library>;
     function mtl_device_new_library_data as cDeviceNewLibraryData(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         ptr<const uint8> $bytes,
         uint64 $length,
         ptr<uint8> $err,
         usize $errCap
-    ) : ptr<uint8>;
+    ) : ptr<mtl_library>;
     function mtl_device_new_render_pipeline as cDeviceNewRenderPipeline(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         ptr<const AbiRenderPipeline> $desc,
         ptr<uint8> $err,
         usize $errCap
-    ) : ptr<uint8>;
+    ) : ptr<mtl_render_pipeline>;
     function mtl_device_new_compute_pipeline as cDeviceNewComputePipeline(
-        ptr<uint8> $device,
-        ptr<uint8> $function,
+        ptr<mtl_device> $device,
+        ptr<mtl_function> $function,
         ptr<uint8> $err,
         usize $errCap
-    ) : ptr<uint8>;
+    ) : ptr<mtl_compute_pipeline>;
     function mtl_device_new_depth_stencil as cDeviceNewDepthStencil(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         ptr<const AbiDepthStencil> $desc
-    ) : ptr<uint8>;
+    ) : ptr<mtl_depth_stencil>;
 
-    function mtl_buffer_length as cBufferLength(ptr<uint8> $buffer) : uint64;
-    function mtl_buffer_contents as cBufferContents(ptr<uint8> $buffer) : ptr<uint8>;
+    function mtl_buffer_length as cBufferLength(ptr<mtl_buffer> $buffer) : uint64;
+    function mtl_buffer_contents as cBufferContents(ptr<mtl_buffer> $buffer) : ptr<uint8>;
     function mtl_texture_replace as cTextureReplace(
-        ptr<uint8> $texture,
+        ptr<mtl_texture> $texture,
         uint64 $ox,
         uint64 $oy,
         uint64 $oz,
@@ -70,58 +87,58 @@ internal extern {
         ptr<const uint8> $bytes,
         uint64 $bytesPerRow
     ) : void;
-    function mtl_texture_width as cTextureWidth(ptr<uint8> $texture) : uint64;
-    function mtl_texture_height as cTextureHeight(ptr<uint8> $texture) : uint64;
+    function mtl_texture_width as cTextureWidth(ptr<mtl_texture> $texture) : uint64;
+    function mtl_texture_height as cTextureHeight(ptr<mtl_texture> $texture) : uint64;
 
-    function mtl_library_new_function as cLibraryNewFunction(ptr<uint8> $library, ptr<const uint8> $name) : ptr<uint8>;
+    function mtl_library_new_function as cLibraryNewFunction(ptr<mtl_library> $library, ptr<const uint8> $name) : ptr<mtl_function>;
 
-    function mtl_queue_command_buffer as cQueueCommandBuffer(ptr<uint8> $queue) : ptr<uint8>;
-    function mtl_command_commit as cCommandCommit(ptr<uint8> $cmd) : void;
-    function mtl_command_wait as cCommandWait(ptr<uint8> $cmd) : void;
-    function mtl_command_present as cCommandPresent(ptr<uint8> $cmd, ptr<uint8> $drawable) : void;
-    function mtl_command_render as cCommandRender(ptr<uint8> $cmd, ptr<const AbiRenderPass> $pass) : ptr<uint8>;
-    function mtl_command_blit as cCommandBlit(ptr<uint8> $cmd) : ptr<uint8>;
-    function mtl_command_compute as cCommandCompute(ptr<uint8> $cmd) : ptr<uint8>;
+    function mtl_queue_command_buffer as cQueueCommandBuffer(ptr<mtl_queue> $queue) : ptr<mtl_command_buffer>;
+    function mtl_command_commit as cCommandCommit(ptr<mtl_command_buffer> $cmd) : void;
+    function mtl_command_wait as cCommandWait(ptr<mtl_command_buffer> $cmd) : void;
+    function mtl_command_present as cCommandPresent(ptr<mtl_command_buffer> $cmd, ptr<mtl_drawable> $drawable) : void;
+    function mtl_command_render as cCommandRender(ptr<mtl_command_buffer> $cmd, ptr<const AbiRenderPass> $pass) : ptr<mtl_render_encoder>;
+    function mtl_command_blit as cCommandBlit(ptr<mtl_command_buffer> $cmd) : ptr<mtl_blit_encoder>;
+    function mtl_command_compute as cCommandCompute(ptr<mtl_command_buffer> $cmd) : ptr<mtl_compute_encoder>;
 
-    function mtl_render_end as cRenderEnd(ptr<uint8> $enc) : void;
-    function mtl_render_set_pipeline as cRenderSetPipeline(ptr<uint8> $enc, ptr<uint8> $pipeline) : void;
-    function mtl_render_set_depth_stencil as cRenderSetDepthStencil(ptr<uint8> $enc, ptr<uint8> $state) : void;
+    function mtl_render_end as cRenderEnd(ptr<mtl_render_encoder> $enc) : void;
+    function mtl_render_set_pipeline as cRenderSetPipeline(ptr<mtl_render_encoder> $enc, ptr<mtl_render_pipeline> $pipeline) : void;
+    function mtl_render_set_depth_stencil as cRenderSetDepthStencil(ptr<mtl_render_encoder> $enc, ptr<mtl_depth_stencil> $state) : void;
     function mtl_render_set_vertex_buffer as cRenderSetVertexBuffer(
-        ptr<uint8> $enc,
-        ptr<uint8> $buffer,
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_buffer> $buffer,
         uint64 $offset,
         uint32 $index
     ) : void;
     function mtl_render_set_fragment_buffer as cRenderSetFragmentBuffer(
-        ptr<uint8> $enc,
-        ptr<uint8> $buffer,
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_buffer> $buffer,
         uint64 $offset,
         uint32 $index
     ) : void;
     function mtl_render_set_vertex_bytes as cRenderSetVertexBytes(
-        ptr<uint8> $enc,
+        ptr<mtl_render_encoder> $enc,
         ptr<const uint8> $bytes,
         uint64 $length,
         uint32 $index
     ) : void;
     function mtl_render_set_fragment_bytes as cRenderSetFragmentBytes(
-        ptr<uint8> $enc,
+        ptr<mtl_render_encoder> $enc,
         ptr<const uint8> $bytes,
         uint64 $length,
         uint32 $index
     ) : void;
     function mtl_render_set_fragment_texture as cRenderSetFragmentTexture(
-        ptr<uint8> $enc,
-        ptr<uint8> $texture,
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_texture> $texture,
         uint32 $index
     ) : void;
     function mtl_render_set_fragment_sampler as cRenderSetFragmentSampler(
-        ptr<uint8> $enc,
-        ptr<uint8> $sampler,
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_sampler> $sampler,
         uint32 $index
     ) : void;
     function mtl_render_set_viewport as cRenderSetViewport(
-        ptr<uint8> $enc,
+        ptr<mtl_render_encoder> $enc,
         float64 $originX,
         float64 $originY,
         float64 $width,
@@ -130,58 +147,58 @@ internal extern {
         float64 $zfar
     ) : void;
     function mtl_render_set_scissor as cRenderSetScissor(
-        ptr<uint8> $enc,
+        ptr<mtl_render_encoder> $enc,
         uint32 $x,
         uint32 $y,
         uint32 $width,
         uint32 $height
     ) : void;
-    function mtl_render_set_cull as cRenderSetCull(ptr<uint8> $enc, uint32 $mode) : void;
-    function mtl_render_set_winding as cRenderSetWinding(ptr<uint8> $enc, uint32 $winding) : void;
+    function mtl_render_set_cull as cRenderSetCull(ptr<mtl_render_encoder> $enc, uint32 $mode) : void;
+    function mtl_render_set_winding as cRenderSetWinding(ptr<mtl_render_encoder> $enc, uint32 $winding) : void;
     function mtl_render_draw as cRenderDraw(
-        ptr<uint8> $enc,
+        ptr<mtl_render_encoder> $enc,
         uint32 $primitive,
         uint32 $start,
         uint32 $count,
         uint32 $instances
     ) : void;
     function mtl_render_draw_indexed as cRenderDrawIndexed(
-        ptr<uint8> $enc,
+        ptr<mtl_render_encoder> $enc,
         uint32 $primitive,
         uint32 $indexCount,
         uint32 $indexType,
-        ptr<uint8> $indexBuffer,
+        ptr<mtl_buffer> $indexBuffer,
         uint64 $indexOffset,
         uint32 $instances
     ) : void;
 
-    function mtl_blit_end as cBlitEnd(ptr<uint8> $enc) : void;
+    function mtl_blit_end as cBlitEnd(ptr<mtl_blit_encoder> $enc) : void;
     function mtl_blit_copy_buffer as cBlitCopyBuffer(
-        ptr<uint8> $enc,
-        ptr<uint8> $src,
+        ptr<mtl_blit_encoder> $enc,
+        ptr<mtl_buffer> $src,
         uint64 $srcOffset,
-        ptr<uint8> $dst,
+        ptr<mtl_buffer> $dst,
         uint64 $dstOffset,
         uint64 $size
     ) : void;
 
-    function mtl_compute_end as cComputeEnd(ptr<uint8> $enc) : void;
-    function mtl_compute_set_pipeline as cComputeSetPipeline(ptr<uint8> $enc, ptr<uint8> $pipeline) : void;
+    function mtl_compute_end as cComputeEnd(ptr<mtl_compute_encoder> $enc) : void;
+    function mtl_compute_set_pipeline as cComputeSetPipeline(ptr<mtl_compute_encoder> $enc, ptr<mtl_compute_pipeline> $pipeline) : void;
     function mtl_compute_set_buffer as cComputeSetBuffer(
-        ptr<uint8> $enc,
-        ptr<uint8> $buffer,
+        ptr<mtl_compute_encoder> $enc,
+        ptr<mtl_buffer> $buffer,
         uint64 $offset,
         uint32 $index
     ) : void;
     function mtl_compute_set_bytes as cComputeSetBytes(
-        ptr<uint8> $enc,
+        ptr<mtl_compute_encoder> $enc,
         ptr<const uint8> $bytes,
         uint64 $length,
         uint32 $index
     ) : void;
-    function mtl_compute_set_texture as cComputeSetTexture(ptr<uint8> $enc, ptr<uint8> $texture, uint32 $index) : void;
+    function mtl_compute_set_texture as cComputeSetTexture(ptr<mtl_compute_encoder> $enc, ptr<mtl_texture> $texture, uint32 $index) : void;
     function mtl_compute_dispatch as cComputeDispatch(
-        ptr<uint8> $enc,
+        ptr<mtl_compute_encoder> $enc,
         uint64 $tw,
         uint64 $th,
         uint64 $td,
@@ -191,32 +208,32 @@ internal extern {
     ) : void;
 
     function mtl_layer_create as cLayerCreate(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         uint64 $width,
         uint64 $height,
         uint32 $pixelFormat
-    ) : ptr<uint8>;
-    function mtl_layer_from_ptr as cLayerFromPtr(ptr<uint8> $layer) : ptr<uint8>;
+    ) : ptr<mtl_layer>;
+    function mtl_layer_from_ptr as cLayerFromPtr(ptr<uint8> $layer) : ptr<mtl_layer>;
     function mtl_layer_attach_view as cLayerAttachView(
-        ptr<uint8> $device,
+        ptr<mtl_device> $device,
         ptr<uint8> $view,
         uint32 $pixelFormat
-    ) : ptr<uint8>;
-    function mtl_layer_set_device as cLayerSetDevice(ptr<uint8> $layer, ptr<uint8> $device) : void;
-    function mtl_layer_set_pixel_format as cLayerSetPixelFormat(ptr<uint8> $layer, uint32 $format) : void;
+    ) : ptr<mtl_layer>;
+    function mtl_layer_set_device as cLayerSetDevice(ptr<mtl_layer> $layer, ptr<mtl_device> $device) : void;
+    function mtl_layer_set_pixel_format as cLayerSetPixelFormat(ptr<mtl_layer> $layer, uint32 $format) : void;
     function mtl_layer_set_drawable_size as cLayerSetDrawableSize(
-        ptr<uint8> $layer,
+        ptr<mtl_layer> $layer,
         uint64 $width,
         uint64 $height
     ) : void;
     function mtl_layer_get_drawable_size as cLayerGetDrawableSize(
-        ptr<uint8> $layer,
+        ptr<mtl_layer> $layer,
         ptr<uint64> $width,
         ptr<uint64> $height
     ) : void;
-    function mtl_layer_set_contents_scale as cLayerSetContentsScale(ptr<uint8> $layer, float64 $scale) : void;
-    function mtl_layer_contents_scale as cLayerContentsScale(ptr<uint8> $layer) : float64;
-    function mtl_layer_set_framebuffer_only as cLayerSetFramebufferOnly(ptr<uint8> $layer, int32 $only) : void;
-    function mtl_layer_next_drawable as cLayerNextDrawable(ptr<uint8> $layer) : ptr<uint8>;
-    function mtl_drawable_texture as cDrawableTexture(ptr<uint8> $drawable) : ptr<uint8>;
+    function mtl_layer_set_contents_scale as cLayerSetContentsScale(ptr<mtl_layer> $layer, float64 $scale) : void;
+    function mtl_layer_contents_scale as cLayerContentsScale(ptr<mtl_layer> $layer) : float64;
+    function mtl_layer_set_framebuffer_only as cLayerSetFramebufferOnly(ptr<mtl_layer> $layer, int32 $only) : void;
+    function mtl_layer_next_drawable as cLayerNextDrawable(ptr<mtl_layer> $layer) : ptr<mtl_drawable>;
+    function mtl_drawable_texture as cDrawableTexture(ptr<mtl_drawable> $drawable) : ptr<mtl_texture>;
 }

@@ -7,33 +7,33 @@ namespace mtl;
 #[atomic]
 public class Buffer
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_buffer> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_buffer> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_buffer>
     {
         return live($this->id, 'Buffer handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : Buffer?
+    internal static function adopt(ptr<mtl_buffer> $id) : Buffer?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return Buffer($id:$);
+        return Buffer($id);
     }
 
     public const function length() : usize

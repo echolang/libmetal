@@ -9,41 +9,41 @@ namespace mtl;
 #[atomic]
 public class Layer
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_layer> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_layer> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_layer>
     {
         return live($this->id, 'Layer handle is null');
     }
 
     public constructor(Device $device, Size $drawableSize, PixelFormat $pixelFormat = .bgra8Unorm)
     {
-        ptr<uint8> $p = cLayerCreate(
+        ptr<mtl_layer> $p = cLayerCreate(
             $device->raw(),
             $drawableSize->width as uint64,
             $drawableSize->height as uint64,
             $pixelFormat->value()
         );
-        $this->id:$ = live($p, 'Layer create returned null');
+        $this->id = live($p, 'Layer create returned null');
     }
 
     public constructor(fromPtr: ptr<uint8> $caMetalLayer)
     {
-        ptr<uint8> $p = cLayerFromPtr($caMetalLayer);
-        $this->id:$ = live($p, 'Layer fromPtr was null');
+        ptr<mtl_layer> $p = cLayerFromPtr($caMetalLayer);
+        $this->id = live($p, 'Layer fromPtr was null');
     }
 
     public constructor(
@@ -52,8 +52,8 @@ public class Layer
         PixelFormat $pixelFormat = .bgra8Unorm
     )
     {
-        ptr<uint8> $p = cLayerAttachView($device->raw(), $view, $pixelFormat->value());
-        $this->id:$ = live($p, 'Layer attachView returned null');
+        ptr<mtl_layer> $p = cLayerAttachView($device->raw(), $view, $pixelFormat->value());
+        $this->id = live($p, 'Layer attachView returned null');
     }
 
     public function setDevice(Device $device) : void
@@ -108,38 +108,38 @@ public class Layer
 
 public class Drawable
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_drawable> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_drawable> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_drawable>
     {
         return live($this->id, 'Drawable handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : Drawable?
+    internal static function adopt(ptr<mtl_drawable> $id) : Drawable?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return Drawable($id:$);
+        return Drawable($id);
     }
 
     public function texture() : Texture
     {
-        ptr<uint8> $p = cDrawableTexture($this->raw());
+        ptr<mtl_texture> $p = cDrawableTexture($this->raw());
         Texture $t = guard Texture::adopt($p) else {
             die('mtl: drawable has no texture');
         }

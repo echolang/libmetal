@@ -8,33 +8,33 @@ namespace mtl;
 #[atomic]
 public class Device
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_device> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_device> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_device>
     {
         return live($this->id, 'Device handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : Device?
+    internal static function adopt(ptr<mtl_device> $id) : Device?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return Device($id:$);
+        return Device($id);
     }
 
     public static function systemDefault() : Device?
@@ -62,12 +62,10 @@ public class Device
 
     public const function name() : string
     {
-        ptr<uint8> $buf = mem::alloc<uint8>(ERR_CAP);
-        $buf:$[0] = 0;
-        cDeviceName($this->raw(), $buf, ERR_CAP);
-        $name = takeCString($buf);
-        mem::free<uint8>($buf);
-        return $name;
+        string $buf = '';
+        ptr<uint8> $p = errSpare($buf);
+        cDeviceName($this->raw(), $p, ERR_CAP);
+        return takeCString($p);
     }
 
     public function newCommandQueue(string? $label = null) : CommandQueue?
@@ -115,17 +113,14 @@ public class Device
     public function newLibrary(source: const string& $msl, CompileOptions $options) : result<Library, Error>
     {
         $opts = $options->abi();
-        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
-        $err:$[0] = 0;
-        ptr<uint8> $p = cDeviceNewLibrarySource($this->raw(), $msl->cstr(), &$opts, $err, ERR_CAP);
+        string $err = '';
+        ptr<uint8> $ep = errSpare($err);
+        ptr<mtl_library> $p = cDeviceNewLibrarySource($this->raw(), $msl->cstr(), &$opts, $ep, ERR_CAP);
 
-        if ($p:$ == null) {
-            $msg = takeCString($err);
-            mem::free<uint8>($err);
-            return .error(Error::compile($msg));
+        if ($p == null) {
+            return .error(Error::compile(takeCString($ep)));
         }
 
-        mem::free<uint8>($err);
         Library $lib = guard Library::adopt($p) else {
             return .error(Error::compile('library pointer was null'));
         }
@@ -134,23 +129,20 @@ public class Device
 
     public function newLibrary(data: ptr<uint8> $bytes, usize $length) : result<Library, Error>
     {
-        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
-        $err:$[0] = 0;
-        ptr<uint8> $p = cDeviceNewLibraryData(
+        string $err = '';
+        ptr<uint8> $ep = errSpare($err);
+        ptr<mtl_library> $p = cDeviceNewLibraryData(
             $this->raw(),
             ptr<const uint8>($bytes:$),
             $length as uint64,
-            $err,
+            $ep,
             ERR_CAP
         );
 
-        if ($p:$ == null) {
-            $msg = takeCString($err);
-            mem::free<uint8>($err);
-            return .error(Error::compile($msg));
+        if ($p == null) {
+            return .error(Error::compile(takeCString($ep)));
         }
 
-        mem::free<uint8>($err);
         Library $lib = guard Library::adopt($p) else {
             return .error(Error::compile('library pointer was null'));
         }
@@ -160,17 +152,14 @@ public class Device
     public function newRenderPipelineState(const RenderPipelineDescriptor& $desc) : result<RenderPipelineState, Error>
     {
         $abi = $desc->abi();
-        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
-        $err:$[0] = 0;
-        ptr<uint8> $p = cDeviceNewRenderPipeline($this->raw(), &$abi, $err, ERR_CAP);
+        string $err = '';
+        ptr<uint8> $ep = errSpare($err);
+        ptr<mtl_render_pipeline> $p = cDeviceNewRenderPipeline($this->raw(), &$abi, $ep, ERR_CAP);
 
-        if ($p:$ == null) {
-            $msg = takeCString($err);
-            mem::free<uint8>($err);
-            return .error(Error::pipeline($msg));
+        if ($p == null) {
+            return .error(Error::pipeline(takeCString($ep)));
         }
 
-        mem::free<uint8>($err);
         RenderPipelineState $ps = guard RenderPipelineState::adopt($p) else {
             return .error(Error::pipeline('pipeline pointer was null'));
         }
@@ -179,17 +168,14 @@ public class Device
 
     public function newComputePipelineState(Function $function) : result<ComputePipelineState, Error>
     {
-        ptr<uint8> $err = mem::alloc<uint8>(ERR_CAP);
-        $err:$[0] = 0;
-        ptr<uint8> $p = cDeviceNewComputePipeline($this->raw(), $function->raw(), $err, ERR_CAP);
+        string $err = '';
+        ptr<uint8> $ep = errSpare($err);
+        ptr<mtl_compute_pipeline> $p = cDeviceNewComputePipeline($this->raw(), $function->raw(), $ep, ERR_CAP);
 
-        if ($p:$ == null) {
-            $msg = takeCString($err);
-            mem::free<uint8>($err);
-            return .error(Error::pipeline($msg));
+        if ($p == null) {
+            return .error(Error::pipeline(takeCString($ep)));
         }
 
-        mem::free<uint8>($err);
         ComputePipelineState $ps = guard ComputePipelineState::adopt($p) else {
             return .error(Error::pipeline('pipeline pointer was null'));
         }

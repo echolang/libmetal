@@ -91,33 +91,33 @@ internal function packRenderPass(const RenderPassDescriptor& $d) : AbiRenderPass
 
 public class CommandBuffer
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_command_buffer> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_command_buffer> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_command_buffer>
     {
         return live($this->id, 'CommandBuffer handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : CommandBuffer?
+    internal static function adopt(ptr<mtl_command_buffer> $id) : CommandBuffer?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return CommandBuffer($id:$);
+        return CommandBuffer($id);
     }
 
     public function commit() : void
@@ -154,29 +154,29 @@ public class CommandBuffer
 
 public class RenderCommandEncoder
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_render_encoder> $id;
     private bool $ended;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_render_encoder> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
         $this->ended = false;
     }
 
     destructor()
     {
-        if (!$this->ended && $this->id:$ != null) {
+        if (!$this->ended && $this->id != null) {
             cRenderEnd($this->id);
             $this->ended = true;
         }
 
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_render_encoder>
     {
         if ($this->ended) {
             die('mtl: render encoder used after endEncoding');
@@ -185,13 +185,13 @@ public class RenderCommandEncoder
         return live($this->id, 'RenderCommandEncoder handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : RenderCommandEncoder?
+    internal static function adopt(ptr<mtl_render_encoder> $id) : RenderCommandEncoder?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return RenderCommandEncoder($id:$);
+        return RenderCommandEncoder($id);
     }
 
     public function endEncoding() : void
@@ -307,29 +307,29 @@ public class RenderCommandEncoder
 
 public class BlitCommandEncoder
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_blit_encoder> $id;
     private bool $ended;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_blit_encoder> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
         $this->ended = false;
     }
 
     destructor()
     {
-        if (!$this->ended && $this->id:$ != null) {
+        if (!$this->ended && $this->id != null) {
             cBlitEnd($this->id);
             $this->ended = true;
         }
 
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_blit_encoder>
     {
         if ($this->ended) {
             die('mtl: blit encoder used after endEncoding');
@@ -338,13 +338,13 @@ public class BlitCommandEncoder
         return live($this->id, 'BlitCommandEncoder handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : BlitCommandEncoder?
+    internal static function adopt(ptr<mtl_blit_encoder> $id) : BlitCommandEncoder?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return BlitCommandEncoder($id:$);
+        return BlitCommandEncoder($id);
     }
 
     public function endEncoding() : void
@@ -378,29 +378,29 @@ public class BlitCommandEncoder
 
 public class ComputeCommandEncoder
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_compute_encoder> $id;
     private bool $ended;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_compute_encoder> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
         $this->ended = false;
     }
 
     destructor()
     {
-        if (!$this->ended && $this->id:$ != null) {
+        if (!$this->ended && $this->id != null) {
             cComputeEnd($this->id);
             $this->ended = true;
         }
 
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_compute_encoder>
     {
         if ($this->ended) {
             die('mtl: compute encoder used after endEncoding');
@@ -409,13 +409,13 @@ public class ComputeCommandEncoder
         return live($this->id, 'ComputeCommandEncoder handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : ComputeCommandEncoder?
+    internal static function adopt(ptr<mtl_compute_encoder> $id) : ComputeCommandEncoder?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return ComputeCommandEncoder($id:$);
+        return ComputeCommandEncoder($id);
     }
 
     public function endEncoding() : void

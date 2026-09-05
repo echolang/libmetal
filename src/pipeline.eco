@@ -57,7 +57,7 @@ public struct DepthStencilDescriptor
     }
 }
 
-internal function functionPtr(Function? $f) : ptr<uint8>
+internal function functionPtr(Function? $f) : ptr<mtl_function>
 {
     Function $fn = guard $f else {
         return null;
@@ -154,98 +154,98 @@ internal function packRenderPipeline(const RenderPipelineDescriptor& $d) : AbiRe
 #[atomic]
 public class RenderPipelineState
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_render_pipeline> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_render_pipeline> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_render_pipeline>
     {
         return live($this->id, 'RenderPipelineState handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : RenderPipelineState?
+    internal static function adopt(ptr<mtl_render_pipeline> $id) : RenderPipelineState?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return RenderPipelineState($id:$);
+        return RenderPipelineState($id);
     }
 }
 
 #[atomic]
 public class ComputePipelineState
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_compute_pipeline> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_compute_pipeline> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_compute_pipeline>
     {
         return live($this->id, 'ComputePipelineState handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : ComputePipelineState?
+    internal static function adopt(ptr<mtl_compute_pipeline> $id) : ComputePipelineState?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return ComputePipelineState($id:$);
+        return ComputePipelineState($id);
     }
 }
 
 #[atomic]
 public class DepthStencilState
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_depth_stencil> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_depth_stencil> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_depth_stencil>
     {
         return live($this->id, 'DepthStencilState handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : DepthStencilState?
+    internal static function adopt(ptr<mtl_depth_stencil> $id) : DepthStencilState?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return DepthStencilState($id:$);
+        return DepthStencilState($id);
     }
 }

@@ -37,32 +37,32 @@ public struct SamplerDescriptor
 #[atomic]
 public class SamplerState
 {
-    private ptr<uint8> $id;
+    private ptr<mtl_sampler> $id;
 
-    private constructor(ptr<uint8> $id)
+    private constructor(ptr<mtl_sampler> $id)
     {
-        $this->id:$ = $id:$;
+        $this->id = $id;
     }
 
     destructor()
     {
-        if ($this->id:$ != null) {
-            cRelease($this->id);
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
             $this->id:$ = null;
         }
     }
 
-    internal const function raw() : ptr<uint8>
+    internal const function raw() : ptr<mtl_sampler>
     {
         return live($this->id, 'SamplerState handle is null');
     }
 
-    internal static function adopt(ptr<uint8> $id) : SamplerState?
+    internal static function adopt(ptr<mtl_sampler> $id) : SamplerState?
     {
-        if ($id:$ == null) {
+        if ($id == null) {
             return null;
         }
 
-        return SamplerState($id:$);
+        return SamplerState($id);
     }
 }

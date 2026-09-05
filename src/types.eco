@@ -199,8 +199,8 @@ internal struct AbiVertexDesc
 
 internal struct AbiRenderPipeline
 {
-    ptr<uint8> $vertexFunction;
-    ptr<uint8> $fragmentFunction;
+    ptr<mtl_function> $vertexFunction;
+    ptr<mtl_function> $fragmentFunction;
     uint32 $color0;
     uint32 $color1;
     uint32 $color2;
@@ -222,7 +222,7 @@ internal struct AbiDepthStencil
 
 internal struct AbiColorAttach
 {
-    ptr<uint8> $texture;
+    ptr<mtl_texture> $texture;
     uint32 $loadAction;
     uint32 $storeAction;
     AbiClearColor $clear;
@@ -240,7 +240,7 @@ internal struct AbiRenderPass
     AbiColorAttach $color7;
     uint32 $colorCount;
     uint32 $pad0;
-    ptr<uint8> $depthTexture;
+    ptr<mtl_texture> $depthTexture;
     uint32 $depthLoad;
     uint32 $depthStore;
     float32 $depthClear;
