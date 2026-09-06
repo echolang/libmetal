@@ -117,6 +117,14 @@ typedef struct {
     uint32_t color_count;
     uint32_t depth_format;
     mtl_vertex_desc vertex;
+    uint32_t blending;
+    uint32_t src_rgb;
+    uint32_t dst_rgb;
+    uint32_t rgb_op;
+    uint32_t src_a;
+    uint32_t dst_a;
+    uint32_t a_op;
+    uint32_t write_mask;
 } mtl_render_pipeline;
 
 typedef struct {
@@ -190,6 +198,17 @@ void mtl_texture_replace(
     uint32_t mip,
     const void *bytes,
     uint64_t bytes_per_row);
+void mtl_texture_get_bytes(
+    void *texture,
+    void *bytes,
+    uint64_t bytes_per_row,
+    uint64_t ox,
+    uint64_t oy,
+    uint64_t oz,
+    uint64_t width,
+    uint64_t height,
+    uint64_t depth,
+    uint32_t mip);
 uint64_t mtl_texture_width(void *texture);
 uint64_t mtl_texture_height(void *texture);
 

@@ -33,6 +33,14 @@ public struct RenderPipelineDescriptor
     public array<PixelFormat> $colorPixelFormats = array<PixelFormat>();
     public PixelFormat $depthPixelFormat = .invalid;
     public VertexDescriptor $vertexDescriptor;
+    public bool $blendingEnabled = false;
+    public BlendFactor $sourceRGBBlendFactor = .one;
+    public BlendFactor $destinationRGBBlendFactor = .zero;
+    public BlendOperation $rgbBlendOperation = .add;
+    public BlendFactor $sourceAlphaBlendFactor = .one;
+    public BlendFactor $destinationAlphaBlendFactor = .zero;
+    public BlendOperation $alphaBlendOperation = .add;
+    public uint32 $writeMask = 15;
 
     internal const function abi() : AbiRenderPipeline
     {
@@ -134,6 +142,12 @@ internal function packRenderPipeline(const RenderPipelineDescriptor& $d) : AbiRe
         $n = 8;
     }
 
+    uint32 $blending = 0;
+
+    if ($d->blendingEnabled) {
+        $blending = 1;
+    }
+
     return AbiRenderPipeline(
         $d->vertexFunction->raw(),
         functionPtr($d->fragmentFunction),
@@ -147,7 +161,15 @@ internal function packRenderPipeline(const RenderPipelineDescriptor& $d) : AbiRe
         packColorFormat($d->colorPixelFormats, 7),
         $n as uint32,
         $d->depthPixelFormat->value(),
-        packVertexDesc($d->vertexDescriptor)
+        packVertexDesc($d->vertexDescriptor),
+        $blending,
+        $d->sourceRGBBlendFactor->value(),
+        $d->destinationRGBBlendFactor->value(),
+        $d->rgbBlendOperation->value(),
+        $d->sourceAlphaBlendFactor->value(),
+        $d->destinationAlphaBlendFactor->value(),
+        $d->alphaBlendOperation->value(),
+        $d->writeMask
     );
 }
 

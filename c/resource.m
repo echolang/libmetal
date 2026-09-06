@@ -93,6 +93,29 @@ void mtl_texture_replace(
          bytesPerRow:(NSUInteger)bytes_per_row];
 }
 
+void mtl_texture_get_bytes(
+    void *texture,
+    void *bytes,
+    uint64_t bytes_per_row,
+    uint64_t ox,
+    uint64_t oy,
+    uint64_t oz,
+    uint64_t width,
+    uint64_t height,
+    uint64_t depth,
+    uint32_t mip)
+{
+    id<MTLTexture> t = mtl_id(texture);
+    MTLRegion r = {
+        { (NSUInteger)ox, (NSUInteger)oy, (NSUInteger)oz },
+        { (NSUInteger)width, (NSUInteger)height, (NSUInteger)depth }
+    };
+    [t getBytes:bytes
+     bytesPerRow:(NSUInteger)bytes_per_row
+      fromRegion:r
+     mipmapLevel:(NSUInteger)mip];
+}
+
 uint64_t mtl_texture_width(void *texture)
 {
     id<MTLTexture> t = mtl_id(texture);

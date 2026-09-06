@@ -91,4 +91,20 @@ public class Texture
             $bytesPerRow as uint64
         );
     }
+
+    public function getBytes(ptr<uint8> $bytes, usize $bytesPerRow, Region $region, uint32 $mipmapLevel = 0) : void
+    {
+        cTextureGetBytes(
+            $this->raw(),
+            $bytes,
+            $bytesPerRow as uint64,
+            $region->origin->x as uint64,
+            $region->origin->y as uint64,
+            $region->origin->z as uint64,
+            $region->size->width as uint64,
+            $region->size->height as uint64,
+            $region->size->depth as uint64,
+            $mipmapLevel
+        );
+    }
 }

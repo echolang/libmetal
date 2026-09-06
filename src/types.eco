@@ -212,6 +212,14 @@ internal struct AbiRenderPipeline
     uint32 $colorCount;
     uint32 $depthFormat;
     AbiVertexDesc $vertex;
+    uint32 $blending;
+    uint32 $srcRgb;
+    uint32 $dstRgb;
+    uint32 $rgbOp;
+    uint32 $srcA;
+    uint32 $dstA;
+    uint32 $aOp;
+    uint32 $writeMask;
 }
 
 internal struct AbiDepthStencil

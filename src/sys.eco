@@ -87,6 +87,18 @@ internal extern {
         ptr<const uint8> $bytes,
         uint64 $bytesPerRow
     ) : void;
+    function mtl_texture_get_bytes as cTextureGetBytes(
+        ptr<mtl_texture> $texture,
+        ptr<uint8> $bytes,
+        uint64 $bytesPerRow,
+        uint64 $ox,
+        uint64 $oy,
+        uint64 $oz,
+        uint64 $width,
+        uint64 $height,
+        uint64 $depth,
+        uint32 $mip
+    ) : void;
     function mtl_texture_width as cTextureWidth(ptr<mtl_texture> $texture) : uint64;
     function mtl_texture_height as cTextureHeight(ptr<mtl_texture> $texture) : uint64;
 

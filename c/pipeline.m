@@ -136,6 +136,14 @@ void *mtl_device_new_render_pipeline(
 
     for (i = 0; i < n; i++) {
         pd.colorAttachments[i].pixelFormat = (MTLPixelFormat)desc->color_formats[i];
+        pd.colorAttachments[i].blendingEnabled = desc->blending != 0;
+        pd.colorAttachments[i].sourceRGBBlendFactor = (MTLBlendFactor)desc->src_rgb;
+        pd.colorAttachments[i].destinationRGBBlendFactor = (MTLBlendFactor)desc->dst_rgb;
+        pd.colorAttachments[i].rgbBlendOperation = (MTLBlendOperation)desc->rgb_op;
+        pd.colorAttachments[i].sourceAlphaBlendFactor = (MTLBlendFactor)desc->src_a;
+        pd.colorAttachments[i].destinationAlphaBlendFactor = (MTLBlendFactor)desc->dst_a;
+        pd.colorAttachments[i].alphaBlendOperation = (MTLBlendOperation)desc->a_op;
+        pd.colorAttachments[i].writeMask = (MTLColorWriteMask)desc->write_mask;
     }
 
     if (desc->depth_format != 0) {
