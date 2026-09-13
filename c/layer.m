@@ -57,10 +57,10 @@ void *mtl_layer_attach_view(void *device, void *view, uint32_t pixel_format)
     CAMetalLayer *layer = mtl_new_layer(mtl_id(device), 1, 1, pixel_format);
 
 #if TARGET_OS_OSX
-    SEL setWantsLayer = sel_registerName("setWantsLayer:");
     SEL setLayer = sel_registerName("setLayer:");
-    ((void (*)(id, SEL, BOOL))objc_msgSend)(host, setWantsLayer, YES);
+    SEL setWantsLayer = sel_registerName("setWantsLayer:");
     ((void (*)(id, SEL, id))objc_msgSend)(host, setLayer, layer);
+    ((void (*)(id, SEL, BOOL))objc_msgSend)(host, setWantsLayer, YES);
 #else
     SEL layerSel = sel_registerName("layer");
     id hostLayer = ((id (*)(id, SEL))objc_msgSend)(host, layerSel);
@@ -122,6 +122,40 @@ void mtl_layer_set_framebuffer_only(void *layer, int32_t only)
 {
     CAMetalLayer *l = mtl_id(layer);
     l.framebufferOnly = only != 0;
+}
+
+void mtl_layer_set_display_sync(void *layer, int32_t enabled)
+{
+    CAMetalLayer *l = mtl_id(layer);
+#if TARGET_OS_OSX
+    l.displaySyncEnabled = enabled != 0;
+#else
+    (void)l;
+    (void)enabled;
+#endif
+}
+
+int32_t mtl_layer_display_sync(void *layer)
+{
+#if TARGET_OS_OSX
+    CAMetalLayer *l = mtl_id(layer);
+    return l.displaySyncEnabled ? 1 : 0;
+#else
+    (void)layer;
+    return 1;
+#endif
+}
+
+void mtl_layer_set_maximum_drawable_count(void *layer, uint32_t count)
+{
+    CAMetalLayer *l = mtl_id(layer);
+    if (count < 2) {
+        count = 2;
+    }
+    if (count > 3) {
+        count = 3;
+    }
+    l.maximumDrawableCount = count;
 }
 
 void *mtl_layer_next_drawable(void *layer)

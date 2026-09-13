@@ -24,6 +24,7 @@ internal extern {
     struct mtl_compute_encoder;
     struct mtl_layer;
     struct mtl_drawable;
+    struct mtl_shared_event;
 
     function mtl_retain as cRetain(ptr<uint8> $obj) : void;
     function mtl_release as cRelease(ptr<uint8> $obj) : void;
@@ -72,6 +73,7 @@ internal extern {
         ptr<mtl_device> $device,
         ptr<const AbiDepthStencil> $desc
     ) : ptr<mtl_depth_stencil>;
+    function mtl_device_new_shared_event as cDeviceNewSharedEvent(ptr<mtl_device> $device) : ptr<mtl_shared_event>;
 
     function mtl_buffer_length as cBufferLength(ptr<mtl_buffer> $buffer) : uint64;
     function mtl_buffer_contents as cBufferContents(ptr<mtl_buffer> $buffer) : ptr<uint8>;
@@ -84,20 +86,24 @@ internal extern {
         uint64 $height,
         uint64 $depth,
         uint32 $mip,
+        uint32 $slice,
         ptr<const uint8> $bytes,
-        uint64 $bytesPerRow
+        uint64 $bytesPerRow,
+        uint64 $bytesPerImage
     ) : void;
     function mtl_texture_get_bytes as cTextureGetBytes(
         ptr<mtl_texture> $texture,
         ptr<uint8> $bytes,
         uint64 $bytesPerRow,
+        uint64 $bytesPerImage,
         uint64 $ox,
         uint64 $oy,
         uint64 $oz,
         uint64 $width,
         uint64 $height,
         uint64 $depth,
-        uint32 $mip
+        uint32 $mip,
+        uint32 $slice
     ) : void;
     function mtl_texture_width as cTextureWidth(ptr<mtl_texture> $texture) : uint64;
     function mtl_texture_height as cTextureHeight(ptr<mtl_texture> $texture) : uint64;
@@ -108,6 +114,28 @@ internal extern {
     function mtl_command_commit as cCommandCommit(ptr<mtl_command_buffer> $cmd) : void;
     function mtl_command_wait as cCommandWait(ptr<mtl_command_buffer> $cmd) : void;
     function mtl_command_present as cCommandPresent(ptr<mtl_command_buffer> $cmd, ptr<mtl_drawable> $drawable) : void;
+    function mtl_command_present_after as cCommandPresentAfter(
+        ptr<mtl_command_buffer> $cmd,
+        ptr<mtl_drawable> $drawable,
+        float64 $seconds
+    ) : void;
+    function mtl_command_signal_event as cCommandSignalEvent(
+        ptr<mtl_command_buffer> $cmd,
+        ptr<mtl_shared_event> $event,
+        uint64 $value
+    ) : void;
+    function mtl_command_wait_event as cCommandWaitEvent(
+        ptr<mtl_command_buffer> $cmd,
+        ptr<mtl_shared_event> $event,
+        uint64 $value
+    ) : void;
+    function mtl_shared_event_value as cSharedEventValue(ptr<mtl_shared_event> $event) : uint64;
+    function mtl_shared_event_set_value as cSharedEventSetValue(ptr<mtl_shared_event> $event, uint64 $value) : void;
+    function mtl_shared_event_wait as cSharedEventWait(
+        ptr<mtl_shared_event> $event,
+        uint64 $value,
+        uint64 $timeoutMs
+    ) : int32;
     function mtl_command_render as cCommandRender(ptr<mtl_command_buffer> $cmd, ptr<const AbiRenderPass> $pass) : ptr<mtl_render_encoder>;
     function mtl_command_blit as cCommandBlit(ptr<mtl_command_buffer> $cmd) : ptr<mtl_blit_encoder>;
     function mtl_command_compute as cCommandCompute(ptr<mtl_command_buffer> $cmd) : ptr<mtl_compute_encoder>;
@@ -185,6 +213,10 @@ internal extern {
     ) : void;
 
     function mtl_blit_end as cBlitEnd(ptr<mtl_blit_encoder> $enc) : void;
+    function mtl_blit_generate_mipmaps as cBlitGenerateMipmaps(
+        ptr<mtl_blit_encoder> $enc,
+        ptr<mtl_texture> $texture
+    ) : void;
     function mtl_blit_copy_buffer as cBlitCopyBuffer(
         ptr<mtl_blit_encoder> $enc,
         ptr<mtl_buffer> $src,
@@ -192,6 +224,24 @@ internal extern {
         ptr<mtl_buffer> $dst,
         uint64 $dstOffset,
         uint64 $size
+    ) : void;
+    function mtl_blit_copy_texture as cBlitCopyTexture(
+        ptr<mtl_blit_encoder> $enc,
+        ptr<mtl_texture> $src,
+        uint32 $srcSlice,
+        uint32 $srcLevel,
+        uint64 $srcOx,
+        uint64 $srcOy,
+        uint64 $srcOz,
+        uint64 $width,
+        uint64 $height,
+        uint64 $depth,
+        ptr<mtl_texture> $dst,
+        uint32 $dstSlice,
+        uint32 $dstLevel,
+        uint64 $dstOx,
+        uint64 $dstOy,
+        uint64 $dstOz
     ) : void;
 
     function mtl_compute_end as cComputeEnd(ptr<mtl_compute_encoder> $enc) : void;
@@ -246,6 +296,12 @@ internal extern {
     function mtl_layer_set_contents_scale as cLayerSetContentsScale(ptr<mtl_layer> $layer, float64 $scale) : void;
     function mtl_layer_contents_scale as cLayerContentsScale(ptr<mtl_layer> $layer) : float64;
     function mtl_layer_set_framebuffer_only as cLayerSetFramebufferOnly(ptr<mtl_layer> $layer, int32 $only) : void;
+    function mtl_layer_set_display_sync as cLayerSetDisplaySync(ptr<mtl_layer> $layer, int32 $enabled) : void;
+    function mtl_layer_display_sync as cLayerDisplaySync(ptr<mtl_layer> $layer) : int32;
+    function mtl_layer_set_maximum_drawable_count as cLayerSetMaxDrawables(
+        ptr<mtl_layer> $layer,
+        uint32 $count
+    ) : void;
     function mtl_layer_next_drawable as cLayerNextDrawable(ptr<mtl_layer> $layer) : ptr<mtl_drawable>;
     function mtl_drawable_texture as cDrawableTexture(ptr<mtl_drawable> $drawable) : ptr<mtl_texture>;
 }

@@ -187,4 +187,9 @@ public class Device
         $abi = $desc->abi();
         return DepthStencilState::adopt(cDeviceNewDepthStencil($this->raw(), &$abi));
     }
+
+    public function newSharedEvent() : SharedEvent?
+    {
+        return SharedEvent::adopt(cDeviceNewSharedEvent($this->raw()));
+    }
 }

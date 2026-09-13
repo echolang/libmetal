@@ -1,0 +1,54 @@
+#[if: os == darwin]
+test shared_event_cpu
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    mtl::SharedEvent $e = guard $d->newSharedEvent() else {
+        die('mtl: newSharedEvent returned null');
+    }
+
+    assert($e->signaledValue() == 0);
+    $e->setSignaledValue(3);
+    assert($e->signaledValue() == 3);
+    assert($e->waitUntilSignaledValue(3, timeoutMS: 1) == true);
+    assert($e->waitUntilSignaledValue(4, timeoutMS: 1) == false);
+}
+
+test shared_event_gpu
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    mtl::SharedEvent $e = guard $d->newSharedEvent() else {
+        die('mtl: newSharedEvent returned null');
+    }
+
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+
+    $e->setSignaledValue(1);
+    $cmd->encodeWaitForEvent($e, 1);
+    $cmd->encodeSignalEvent($e, 7);
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+
+    assert($e->waitUntilSignaledValue(7, timeoutMS: 1000) == true);
+    assert($e->signaledValue() >= 7);
+}
+#[end]

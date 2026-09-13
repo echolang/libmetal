@@ -1,0 +1,54 @@
+/**
+ * `id<MTLSharedEvent>`. GPU timeline. CPU wait does not wait for a
+ * drawable present.
+ */
+
+namespace mtl;
+
+#[atomic]
+public class SharedEvent
+{
+    private ptr<mtl_shared_event> $id;
+
+    private constructor(ptr<mtl_shared_event> $id)
+    {
+        $this->id = $id;
+    }
+
+    destructor()
+    {
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<mtl_shared_event>
+    {
+        return live($this->id, 'SharedEvent handle is null');
+    }
+
+    internal static function adopt(ptr<mtl_shared_event> $id) : SharedEvent?
+    {
+        if ($id == null) {
+            return null;
+        }
+
+        return SharedEvent($id);
+    }
+
+    public const function signaledValue() : uint64
+    {
+        return cSharedEventValue($this->raw());
+    }
+
+    public function setSignaledValue(uint64 $value) : void
+    {
+        cSharedEventSetValue($this->raw(), $value);
+    }
+
+    public function waitUntilSignaledValue(uint64 $value, timeoutMS: uint64 $timeoutMS) : bool
+    {
+        return cSharedEventWait($this->raw(), $value, $timeoutMS) != 0;
+    }
+}

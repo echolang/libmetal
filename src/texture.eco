@@ -87,8 +87,40 @@ public class Texture
             $region->size->height as uint64,
             $region->size->depth as uint64,
             $mipmapLevel,
+            0,
             ptr<const uint8>($bytes:$),
-            $bytesPerRow as uint64
+            $bytesPerRow as uint64,
+            0
+        );
+    }
+
+    /**
+     * Writes one array slice. A cube face is a slice, in the order
+     * +X -X +Y -Y +Z -Z. `bytesPerImage` is the stride between images;
+     * tightly packed is `bytesPerRow * height`.
+     */
+    public function replace(
+        Region $region,
+        ptr<uint8> $bytes,
+        usize $bytesPerRow,
+        uint32 $mipmapLevel,
+        slice: uint32 $slice,
+        bytesPerImage: usize $bytesPerImage
+    ) : void
+    {
+        cTextureReplace(
+            $this->raw(),
+            $region->origin->x as uint64,
+            $region->origin->y as uint64,
+            $region->origin->z as uint64,
+            $region->size->width as uint64,
+            $region->size->height as uint64,
+            $region->size->depth as uint64,
+            $mipmapLevel,
+            $slice,
+            ptr<const uint8>($bytes:$),
+            $bytesPerRow as uint64,
+            $bytesPerImage as uint64
         );
     }
 
@@ -98,13 +130,40 @@ public class Texture
             $this->raw(),
             $bytes,
             $bytesPerRow as uint64,
+            0,
             $region->origin->x as uint64,
             $region->origin->y as uint64,
             $region->origin->z as uint64,
             $region->size->width as uint64,
             $region->size->height as uint64,
             $region->size->depth as uint64,
-            $mipmapLevel
+            $mipmapLevel,
+            0
+        );
+    }
+
+    public function getBytes(
+        ptr<uint8> $bytes,
+        usize $bytesPerRow,
+        Region $region,
+        uint32 $mipmapLevel,
+        slice: uint32 $slice,
+        bytesPerImage: usize $bytesPerImage
+    ) : void
+    {
+        cTextureGetBytes(
+            $this->raw(),
+            $bytes,
+            $bytesPerRow as uint64,
+            $bytesPerImage as uint64,
+            $region->origin->x as uint64,
+            $region->origin->y as uint64,
+            $region->origin->z as uint64,
+            $region->size->width as uint64,
+            $region->size->height as uint64,
+            $region->size->depth as uint64,
+            $mipmapLevel,
+            $slice
         );
     }
 }

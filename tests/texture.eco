@@ -17,4 +17,125 @@ test texture_2d
     assert($t->width() == 8);
     assert($t->height() == 4);
 }
+
+test texture_replace_roundtrip
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $desc = mtl::TextureDescriptor(
+        $pixelFormat: .rgba8Unorm,
+        $width: 1,
+        $height: 1,
+        $storageMode: .shared
+    );
+    mtl::Texture $t = guard $d->newTexture($desc) else {
+        die('mtl: newTexture returned null');
+    }
+
+    uint32 $px = 0xAABBCCDD;
+    $region = mtl::Region(mtl::Origin(), mtl::Size(1, 1));
+    $t->replace($region, ptr<uint8>(&$px), 4);
+
+    uint32 $got = 0;
+    $t->getBytes(ptr<uint8>(&$got), 4, $region);
+    assert($got == $px);
+}
+
+test texture_cube_slice
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $desc = mtl::TextureDescriptor(
+        $textureType: .typeCube,
+        $pixelFormat: .rgba8Unorm,
+        $width: 1,
+        $height: 1,
+        $storageMode: .shared
+    );
+    mtl::Texture $t = guard $d->newTexture($desc) else {
+        die('mtl: cube newTexture returned null');
+    }
+
+    uint32 $face0 = 0x01010101;
+    uint32 $face2 = 0x11223344;
+    $region = mtl::Region(mtl::Origin(), mtl::Size(1, 1));
+    $t->replace($region, ptr<uint8>(&$face0), 4, 0, slice: 0, bytesPerImage: 4);
+    $t->replace($region, ptr<uint8>(&$face2), 4, 0, slice: 2, bytesPerImage: 4);
+
+    uint32 $got0 = 0;
+    uint32 $got2 = 0;
+    $t->getBytes(ptr<uint8>(&$got0), 4, $region, 0, slice: 0, bytesPerImage: 4);
+    $t->getBytes(ptr<uint8>(&$got2), 4, $region, 0, slice: 2, bytesPerImage: 4);
+    assert($got0 == $face0);
+    assert($got2 == $face2);
+}
+
+test texture_blit_copy
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    uint32 $usage = mtl::TEXTURE_USAGE_SHADER_READ + mtl::TEXTURE_USAGE_SHADER_WRITE;
+    $srcDesc = mtl::TextureDescriptor(
+        $pixelFormat: .rgba8Unorm,
+        $width: 1,
+        $height: 1,
+        $usage: $usage,
+        $storageMode: .shared
+    );
+    $dstDesc = mtl::TextureDescriptor(
+        $pixelFormat: .rgba8Unorm,
+        $width: 1,
+        $height: 1,
+        $usage: $usage,
+        $storageMode: .shared
+    );
+
+    mtl::Texture $src = guard $d->newTexture($srcDesc) else {
+        die('mtl: src texture null');
+    }
+    mtl::Texture $dst = guard $d->newTexture($dstDesc) else {
+        die('mtl: dst texture null');
+    }
+
+    uint32 $px = 0x55667788;
+    $region = mtl::Region(mtl::Origin(), mtl::Size(1, 1));
+    $src->replace($region, ptr<uint8>(&$px), 4);
+
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+    mtl::BlitCommandEncoder $blit = guard $cmd->blitCommandEncoder() else {
+        die('mtl: no blit encoder');
+    }
+
+    $blit->copyFromTexture($src, mtl::Origin(), mtl::Size(1, 1), $dst, mtl::Origin());
+    $blit->endEncoding();
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+
+    uint32 $got = 0;
+    $dst->getBytes(ptr<uint8>(&$got), 4, $region);
+    assert($got == $px);
+}
 #[end]

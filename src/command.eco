@@ -11,6 +11,10 @@ public struct ColorAttachment
     public LoadAction $loadAction = .clear;
     public StoreAction $storeAction = .store;
     public ClearColor $clearColor;
+    /** mip level to render into */
+    public uint32 $level = 0;
+    /** array slice; a cube face is a slice */
+    public uint32 $slice = 0;
 }
 
 public struct RenderPassDescriptor
@@ -20,6 +24,10 @@ public struct RenderPassDescriptor
     public LoadAction $depthLoadAction = .clear;
     public StoreAction $depthStoreAction = .dontCare;
     public float32 $depthClear = 1.0f;
+    /** mip level to render into */
+    public uint32 $depthLevel = 0;
+    /** array slice; a cube face is a slice */
+    public uint32 $depthSlice = 0;
 
     internal const function abi() : AbiRenderPass
     {
@@ -30,7 +38,7 @@ public struct RenderPassDescriptor
 internal function packColorAttach(const array<ColorAttachment>& $a, usize $i) : AbiColorAttach
 {
     if ($i >= $a->count()) {
-        return AbiColorAttach(null, 0, 0, AbiClearColor(0.0, 0.0, 0.0, 1.0));
+        return AbiColorAttach(null, 0, 0, 0, 0, AbiClearColor(0.0, 0.0, 0.0, 1.0));
     }
 
     $c = $a[$i];
@@ -38,6 +46,8 @@ internal function packColorAttach(const array<ColorAttachment>& $a, usize $i) : 
         $c->texture->raw(),
         $c->loadAction->value(),
         $c->storeAction->value(),
+        $c->level,
+        $c->slice,
         $c->clearColor->abi()
     );
 }
@@ -66,6 +76,8 @@ internal function packRenderPass(const RenderPassDescriptor& $d) : AbiRenderPass
             $d->depthLoadAction->value(),
             $d->depthStoreAction->value(),
             $d->depthClear,
+            $d->depthLevel,
+            $d->depthSlice,
             0
         );
     }
@@ -85,6 +97,8 @@ internal function packRenderPass(const RenderPassDescriptor& $d) : AbiRenderPass
         $d->depthLoadAction->value(),
         $d->depthStoreAction->value(),
         $d->depthClear,
+        $d->depthLevel,
+        $d->depthSlice,
         0
     );
 }
@@ -133,6 +147,21 @@ public class CommandBuffer
     public function present(Drawable $drawable) : void
     {
         cCommandPresent($this->raw(), $drawable->raw());
+    }
+
+    public function present(Drawable $drawable, after: float64 $seconds) : void
+    {
+        cCommandPresentAfter($this->raw(), $drawable->raw(), $seconds);
+    }
+
+    public function encodeSignalEvent(SharedEvent $event, uint64 $value) : void
+    {
+        cCommandSignalEvent($this->raw(), $event->raw(), $value);
+    }
+
+    public function encodeWaitForEvent(SharedEvent $event, uint64 $value) : void
+    {
+        cCommandWaitEvent($this->raw(), $event->raw(), $value);
     }
 
     public function renderCommandEncoder(const RenderPassDescriptor& $pass) : RenderCommandEncoder?
@@ -372,6 +401,44 @@ public class BlitCommandEncoder
             $destination->raw(),
             $destinationOffset as uint64,
             $size as uint64
+        );
+    }
+
+    /** fills every mip below level 0 from the level above it */
+    public function generateMipmaps(Texture $texture) : void
+    {
+        cBlitGenerateMipmaps($this->raw(), $texture->raw());
+    }
+
+    public function copyFromTexture(
+        Texture $source,
+        Origin $sourceOrigin,
+        Size $sourceSize,
+        Texture $destination,
+        Origin $destinationOrigin,
+        sourceSlice: uint32 $sourceSlice = 0,
+        sourceLevel: uint32 $sourceLevel = 0,
+        destinationSlice: uint32 $destinationSlice = 0,
+        destinationLevel: uint32 $destinationLevel = 0
+    ) : void
+    {
+        cBlitCopyTexture(
+            $this->raw(),
+            $source->raw(),
+            $sourceSlice,
+            $sourceLevel,
+            $sourceOrigin->x as uint64,
+            $sourceOrigin->y as uint64,
+            $sourceOrigin->z as uint64,
+            $sourceSize->width as uint64,
+            $sourceSize->height as uint64,
+            $sourceSize->depth as uint64,
+            $destination->raw(),
+            $destinationSlice,
+            $destinationLevel,
+            $destinationOrigin->x as uint64,
+            $destinationOrigin->y as uint64,
+            $destinationOrigin->z as uint64
         );
     }
 }

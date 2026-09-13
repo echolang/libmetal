@@ -50,3 +50,27 @@ void *mtl_device_new_queue(void *device, const char *label)
 
     return mtl_retain_id(q);
 }
+
+void *mtl_device_new_shared_event(void *device)
+{
+    id<MTLDevice> d = mtl_id(device);
+    return mtl_retain_id([d newSharedEvent]);
+}
+
+uint64_t mtl_shared_event_value(void *event)
+{
+    id<MTLSharedEvent> e = mtl_id(event);
+    return e.signaledValue;
+}
+
+void mtl_shared_event_set_value(void *event, uint64_t value)
+{
+    id<MTLSharedEvent> e = mtl_id(event);
+    e.signaledValue = value;
+}
+
+int32_t mtl_shared_event_wait(void *event, uint64_t value, uint64_t timeout_ms)
+{
+    id<MTLSharedEvent> e = mtl_id(event);
+    return [e waitUntilSignaledValue:value timeoutMS:timeout_ms] ? 1 : 0;
+}

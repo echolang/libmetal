@@ -233,6 +233,8 @@ internal struct AbiColorAttach
     ptr<mtl_texture> $texture;
     uint32 $loadAction;
     uint32 $storeAction;
+    uint32 $level;
+    uint32 $slice;
     AbiClearColor $clear;
 }
 
@@ -252,5 +254,7 @@ internal struct AbiRenderPass
     uint32 $depthLoad;
     uint32 $depthStore;
     float32 $depthClear;
+    uint32 $depthLevel;
+    uint32 $depthSlice;
     uint32 $pad1;
 }

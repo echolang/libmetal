@@ -25,6 +25,25 @@ void mtl_command_present(void *cmd, void *drawable)
     [c presentDrawable:d];
 }
 
+void mtl_command_present_after(void *cmd, void *drawable, double seconds)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    id<MTLDrawable> d = mtl_id(drawable);
+    [c presentDrawable:d afterMinimumDuration:seconds];
+}
+
+void mtl_command_signal_event(void *cmd, void *event, uint64_t value)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    [c encodeSignalEvent:mtl_id(event) value:value];
+}
+
+void mtl_command_wait_event(void *cmd, void *event, uint64_t value)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    [c encodeWaitForEvent:mtl_id(event) value:value];
+}
+
 void *mtl_command_render(void *cmd, const mtl_render_pass *pass)
 {
     if (pass == NULL) {
@@ -44,6 +63,8 @@ void *mtl_command_render(void *cmd, const mtl_render_pass *pass)
         ca.texture = mtl_id(pass->colors[i].texture);
         ca.loadAction = (MTLLoadAction)pass->colors[i].load_action;
         ca.storeAction = (MTLStoreAction)pass->colors[i].store_action;
+        ca.level = (NSUInteger)pass->colors[i].level;
+        ca.slice = (NSUInteger)pass->colors[i].slice;
         ca.clearColor = MTLClearColorMake(
             pass->colors[i].clear.r,
             pass->colors[i].clear.g,
@@ -56,10 +77,18 @@ void *mtl_command_render(void *cmd, const mtl_render_pass *pass)
         pd.depthAttachment.loadAction = (MTLLoadAction)pass->depth_load;
         pd.depthAttachment.storeAction = (MTLStoreAction)pass->depth_store;
         pd.depthAttachment.clearDepth = (double)pass->depth_clear;
+        pd.depthAttachment.level = (NSUInteger)pass->depth_level;
+        pd.depthAttachment.slice = (NSUInteger)pass->depth_slice;
     }
 
     id<MTLCommandBuffer> c = mtl_id(cmd);
     return mtl_retain_id([c renderCommandEncoderWithDescriptor:pd]);
+}
+
+void mtl_blit_generate_mipmaps(void *enc, void *texture)
+{
+    id<MTLBlitCommandEncoder> e = mtl_id(enc);
+    [e generateMipmapsForTexture:mtl_id(texture)];
 }
 
 void *mtl_command_blit(void *cmd)
@@ -208,6 +237,36 @@ void mtl_blit_copy_buffer(
              toBuffer:mtl_id(dst)
     destinationOffset:(NSUInteger)dst_offset
                  size:(NSUInteger)size];
+}
+
+void mtl_blit_copy_texture(
+    void *enc,
+    void *src,
+    uint32_t src_slice,
+    uint32_t src_level,
+    uint64_t src_ox,
+    uint64_t src_oy,
+    uint64_t src_oz,
+    uint64_t width,
+    uint64_t height,
+    uint64_t depth,
+    void *dst,
+    uint32_t dst_slice,
+    uint32_t dst_level,
+    uint64_t dst_ox,
+    uint64_t dst_oy,
+    uint64_t dst_oz)
+{
+    id<MTLBlitCommandEncoder> e = mtl_id(enc);
+    [e copyFromTexture:mtl_id(src)
+           sourceSlice:(NSUInteger)src_slice
+           sourceLevel:(NSUInteger)src_level
+          sourceOrigin:MTLOriginMake((NSUInteger)src_ox, (NSUInteger)src_oy, (NSUInteger)src_oz)
+            sourceSize:MTLSizeMake((NSUInteger)width, (NSUInteger)height, (NSUInteger)depth)
+             toTexture:mtl_id(dst)
+      destinationSlice:(NSUInteger)dst_slice
+      destinationLevel:(NSUInteger)dst_level
+     destinationOrigin:MTLOriginMake((NSUInteger)dst_ox, (NSUInteger)dst_oy, (NSUInteger)dst_oz)];
 }
 
 void mtl_compute_end(void *enc)

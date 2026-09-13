@@ -100,6 +100,27 @@ public class Layer
         cLayerSetFramebufferOnly($this->raw(), $v);
     }
 
+    public function setDisplaySync(bool $on) : void
+    {
+        int32 $v = 0;
+
+        if ($on) {
+            $v = 1;
+        }
+
+        cLayerSetDisplaySync($this->raw(), $v);
+    }
+
+    public const function displaySync() : bool
+    {
+        return cLayerDisplaySync($this->raw()) != 0;
+    }
+
+    public function setMaximumDrawableCount(uint32 $count) : void
+    {
+        cLayerSetMaxDrawables($this->raw(), $count);
+    }
+
     public function nextDrawable() : Drawable?
     {
         return Drawable::adopt(cLayerNextDrawable($this->raw()));

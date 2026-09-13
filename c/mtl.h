@@ -136,6 +136,9 @@ typedef struct {
     void *texture;
     uint32_t load_action;
     uint32_t store_action;
+    /* mip level and array slice (cube face) to render into */
+    uint32_t level;
+    uint32_t slice;
     mtl_clear_color clear;
 } mtl_color_attach;
 
@@ -146,6 +149,8 @@ typedef struct {
     uint32_t depth_load;
     uint32_t depth_store;
     float depth_clear;
+    uint32_t depth_level;
+    uint32_t depth_slice;
 } mtl_render_pass;
 
 /* device */
@@ -182,6 +187,7 @@ void *mtl_device_new_compute_pipeline(
     char *err,
     size_t err_cap);
 void *mtl_device_new_depth_stencil(void *device, const mtl_depth_stencil_desc *desc);
+void *mtl_device_new_shared_event(void *device);
 
 /* buffer / texture */
 
@@ -196,19 +202,23 @@ void mtl_texture_replace(
     uint64_t height,
     uint64_t depth,
     uint32_t mip,
+    uint32_t slice,
     const void *bytes,
-    uint64_t bytes_per_row);
+    uint64_t bytes_per_row,
+    uint64_t bytes_per_image);
 void mtl_texture_get_bytes(
     void *texture,
     void *bytes,
     uint64_t bytes_per_row,
+    uint64_t bytes_per_image,
     uint64_t ox,
     uint64_t oy,
     uint64_t oz,
     uint64_t width,
     uint64_t height,
     uint64_t depth,
-    uint32_t mip);
+    uint32_t mip,
+    uint32_t slice);
 uint64_t mtl_texture_width(void *texture);
 uint64_t mtl_texture_height(void *texture);
 
@@ -222,6 +232,12 @@ void *mtl_queue_command_buffer(void *queue);
 void mtl_command_commit(void *cmd);
 void mtl_command_wait(void *cmd);
 void mtl_command_present(void *cmd, void *drawable);
+void mtl_command_present_after(void *cmd, void *drawable, double seconds);
+void mtl_command_signal_event(void *cmd, void *event, uint64_t value);
+void mtl_command_wait_event(void *cmd, void *event, uint64_t value);
+uint64_t mtl_shared_event_value(void *event);
+void mtl_shared_event_set_value(void *event, uint64_t value);
+int32_t mtl_shared_event_wait(void *event, uint64_t value, uint64_t timeout_ms);
 void *mtl_command_render(void *cmd, const mtl_render_pass *pass);
 void *mtl_command_blit(void *cmd);
 void *mtl_command_compute(void *cmd);
@@ -268,6 +284,24 @@ void mtl_blit_copy_buffer(
     void *dst,
     uint64_t dst_offset,
     uint64_t size);
+void mtl_blit_generate_mipmaps(void *enc, void *texture);
+void mtl_blit_copy_texture(
+    void *enc,
+    void *src,
+    uint32_t src_slice,
+    uint32_t src_level,
+    uint64_t src_ox,
+    uint64_t src_oy,
+    uint64_t src_oz,
+    uint64_t width,
+    uint64_t height,
+    uint64_t depth,
+    void *dst,
+    uint32_t dst_slice,
+    uint32_t dst_level,
+    uint64_t dst_ox,
+    uint64_t dst_oy,
+    uint64_t dst_oz);
 
 /* compute encoder */
 
@@ -297,6 +331,9 @@ void mtl_layer_get_drawable_size(void *layer, uint64_t *width, uint64_t *height)
 void mtl_layer_set_contents_scale(void *layer, double scale);
 double mtl_layer_contents_scale(void *layer);
 void mtl_layer_set_framebuffer_only(void *layer, int32_t only);
+void mtl_layer_set_display_sync(void *layer, int32_t enabled);
+int32_t mtl_layer_display_sync(void *layer);
+void mtl_layer_set_maximum_drawable_count(void *layer, uint32_t count);
 void *mtl_layer_next_drawable(void *layer);
 void *mtl_drawable_texture(void *drawable);
 
