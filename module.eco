@@ -11,7 +11,7 @@
 #[epm::license: "MIT"]
 #[epm::description: "Metal GPU bindings for Echo"]
 
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 #[sources: "src/*.eco"]
 #[cc: sources "c/*.m"]
 #[cc: flag "-fobjc-arc"]

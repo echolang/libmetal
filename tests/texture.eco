@@ -1,4 +1,4 @@
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 test texture_2d
 {
     if (!mtl::available()) {

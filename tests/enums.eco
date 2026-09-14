@@ -2,7 +2,7 @@
  * GPU-free backing values. Apple's numbers, not ours.
  */
 
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 test pixel_formats
 {
     assert(mtl::PixelFormat::bgra8Unorm->value() == 80);

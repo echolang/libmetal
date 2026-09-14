@@ -52,7 +52,7 @@ if ($window:$ == null) {
     die(glfw::error_message());
 }
 
-mtl::Layer $layer = mtl::Layer(attachView: glfw::getCocoaWindow($window), $device);
+mtl::Layer $layer = mtl::Layer(attachView: glfw::getCocoaView($window), $device);
 
 int32 $fbW = 0;
 int32 $fbH = 0;

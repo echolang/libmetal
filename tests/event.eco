@@ -1,4 +1,4 @@
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 test shared_event_cpu
 {
     if (!mtl::available()) {

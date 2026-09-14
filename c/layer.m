@@ -29,49 +29,34 @@ void *mtl_layer_from_ptr(void *layer)
     return layer;
 }
 
-static id mtl_view_from_handle(void *handle)
-{
-    id obj = mtl_id(handle);
-
-    if (obj == nil) {
-        return nil;
-    }
-
-    SEL contentView = sel_registerName("contentView");
-
-    if ([obj respondsToSelector:contentView]) {
-        return ((id (*)(id, SEL))objc_msgSend)(obj, contentView);
-    }
-
-    return obj;
-}
-
 void *mtl_layer_attach_view(void *device, void *view, uint32_t pixel_format)
 {
-    id host = mtl_view_from_handle(view);
+    id host = mtl_id(view);
 
     if (host == nil) {
         return NULL;
     }
 
-    CAMetalLayer *layer = mtl_new_layer(mtl_id(device), 1, 1, pixel_format);
-
 #if TARGET_OS_OSX
+    CAMetalLayer *layer = mtl_new_layer(mtl_id(device), 1, 1, pixel_format);
     SEL setLayer = sel_registerName("setLayer:");
     SEL setWantsLayer = sel_registerName("setWantsLayer:");
     ((void (*)(id, SEL, id))objc_msgSend)(host, setLayer, layer);
     ((void (*)(id, SEL, BOOL))objc_msgSend)(host, setWantsLayer, YES);
+    return mtl_retain_id(layer);
 #else
     SEL layerSel = sel_registerName("layer");
     id hostLayer = ((id (*)(id, SEL))objc_msgSend)(host, layerSel);
-    SEL addSublayer = sel_registerName("addSublayer:");
 
-    if (hostLayer != nil) {
-        ((void (*)(id, SEL, id))objc_msgSend)(hostLayer, addSublayer, layer);
+    if (hostLayer == nil || ![hostLayer isKindOfClass:[CAMetalLayer class]]) {
+        return NULL;
     }
-#endif
 
-    return mtl_retain_id(layer);
+    CAMetalLayer *existing = (CAMetalLayer *)hostLayer;
+    existing.device = mtl_id(device);
+    existing.pixelFormat = (MTLPixelFormat)pixel_format;
+    return mtl_retain_id(existing);
+#endif
 }
 
 void mtl_layer_set_device(void *layer, void *device)

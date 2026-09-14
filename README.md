@@ -6,7 +6,7 @@ So this is Echo's Metal binding: a small Objective-C C ABI in `c/*.m`, then Echo
 
 It is a binding, not a renderer. GLFW, UIKit, or your own view still creates the window. This module talks to a layer once one exists, the same way libopengl talks to a context once one exists.
 
-Apple platforms only: macOS, iOS, tvOS. Echo's `os` axis is `darwin` for the whole family. The C shim uses `TargetConditionals.h`. There is no AppKit or UIKit link; those would make the other OS impossible.
+Apple platforms only: macOS, iOS, tvOS. Real sources compile when `os` is `darwin` or `ios`. The C shim uses `TargetConditionals.h`. There is no AppKit or UIKit link; those would make the other OS impossible.
 
 ## The simple case
 
@@ -59,7 +59,7 @@ Several construction paths are labelled constructors, not static factories:
 ```echo
 $offscreen = mtl::Layer($device, mtl::Size($width: 800, $height: 600));
 $fromUi = mtl::Layer(fromPtr: $caMetalLayer);
-$fromGlfw = mtl::Layer(attachView: glfw::getCocoaWindow($window), $device);
+$fromGlfw = mtl::Layer(attachView: glfw::getCocoaView($window), $device);
 ```
 
 Encoder slots that would swap two `uint32`s take `index:`:
@@ -101,14 +101,14 @@ This is not a window. On macOS, create a GLFW window with `glfw::NO_API`, then a
 ```echo
 glfw::windowHint(glfw::CLIENT_API, glfw::NO_API);
 ptr<glfw::Window> $window = glfw::createWindow(800, 600, 'libmetal', null, null);
-mtl::Layer $layer = mtl::Layer(attachView: glfw::getCocoaWindow($window), $device);
+mtl::Layer $layer = mtl::Layer(attachView: glfw::getCocoaView($window), $device);
 ```
 
 No `makeContextCurrent`. No `gl::load`. No `swapBuffers`. Present is `$cmd->present($drawable)` then `commit`.
 
-On iOS and tvOS the UIKit side owns the `UIView`. Either `+layerClass` returning `[CAMetalLayer class]` and `Layer(fromPtr: view.layer)`, or `Layer(attachView: $uiView, $device)`. libmetal never creates a `UIWindow`.
+On iOS and tvOS the UIKit side owns the view. Give libmetal a view whose layer is already a `CAMetalLayer` (`+layerClass`, or `MTKView`): `Layer(attachView: $view, $device)`, or wrap the layer with `Layer(fromPtr: $caMetalLayer)`. A plain `UIView` does not attach. libmetal never creates a `UIWindow`.
 
-libmetal does not depend on libglfw. `glfw::getCocoaWindow` lives in libglfw, Darwin only.
+libmetal does not depend on libglfw. `glfw::getCocoaView` lives in libglfw, Darwin only.
 
 ## Tests
 

@@ -1,4 +1,4 @@
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 test compile_kernel
 {
     if (!mtl::available()) {

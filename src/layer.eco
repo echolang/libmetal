@@ -2,6 +2,8 @@
  * `CAMetalLayer` and the drawable it vends.
  *
  * Three labelled constructors. None of them name AppKit or UIKit.
+ * `attachView:` takes the view, not a window. macOS installs a new
+ * CAMetalLayer. iOS reuses the view's existing CAMetalLayer.
  */
 
 namespace mtl;

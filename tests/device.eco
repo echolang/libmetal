@@ -1,4 +1,4 @@
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 test system_default_device
 {
     if (!mtl::available()) {

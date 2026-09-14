@@ -1,4 +1,4 @@
-#[if: os == darwin]
+#[if: os == darwin || os == ios]
 test compute_fill
 {
     if (!mtl::available()) {
