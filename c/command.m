@@ -29,7 +29,13 @@ void mtl_command_present_after(void *cmd, void *drawable, double seconds)
 {
     id<MTLCommandBuffer> c = mtl_id(cmd);
     id<MTLDrawable> d = mtl_id(drawable);
+#if TARGET_OS_IPHONE
+    /* simulator/device headers omit presentDrawable:afterMinimumDuration: */
+    (void)seconds;
+    [c presentDrawable:d];
+#else
     [c presentDrawable:d afterMinimumDuration:seconds];
+#endif
 }
 
 void mtl_command_signal_event(void *cmd, void *event, uint64_t value)
