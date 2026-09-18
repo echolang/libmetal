@@ -125,6 +125,12 @@ typedef struct {
     uint32_t dst_a;
     uint32_t a_op;
     uint32_t write_mask;
+    uint32_t max_tessellation_factor;
+    uint32_t tessellation_partition_mode;
+    uint32_t tessellation_factor_format;
+    uint32_t tessellation_factor_step;
+    uint32_t tessellation_output_winding;
+    uint32_t tessellation_control_point_index_type;
 } mtl_render_pipeline;
 
 typedef struct {
@@ -159,6 +165,7 @@ void *mtl_device_default(void);
 uint64_t mtl_device_count(void);
 void *mtl_device_at(uint64_t i);
 void mtl_device_name(void *device, char *buf, size_t cap);
+uint64_t mtl_device_max_tessellation_factor(void *device);
 void *mtl_device_new_queue(void *device, const char *label);
 void *mtl_device_new_buffer(void *device, uint64_t length, uint32_t options);
 void *mtl_device_new_buffer_bytes(void *device, const void *bytes, uint64_t length, uint32_t options);
@@ -253,6 +260,13 @@ void mtl_render_set_vertex_bytes(void *enc, const void *bytes, uint64_t length, 
 void mtl_render_set_fragment_bytes(void *enc, const void *bytes, uint64_t length, uint32_t index);
 void mtl_render_set_fragment_texture(void *enc, void *texture, uint32_t index);
 void mtl_render_set_fragment_sampler(void *enc, void *sampler, uint32_t index);
+void mtl_render_set_vertex_texture(void *enc, void *texture, uint32_t index);
+void mtl_render_set_vertex_sampler(void *enc, void *sampler, uint32_t index);
+void mtl_render_set_tessellation_factor_buffer(
+    void *enc,
+    void *buffer,
+    uint64_t offset,
+    uint32_t instance_stride);
 void mtl_render_set_viewport(
     void *enc,
     double origin_x,
@@ -264,6 +278,7 @@ void mtl_render_set_viewport(
 void mtl_render_set_scissor(void *enc, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 void mtl_render_set_cull(void *enc, uint32_t mode);
 void mtl_render_set_winding(void *enc, uint32_t winding);
+void mtl_render_set_triangle_fill(void *enc, uint32_t mode);
 void mtl_render_draw(void *enc, uint32_t primitive, uint32_t start, uint32_t count, uint32_t instances);
 void mtl_render_draw_indexed(
     void *enc,
@@ -272,6 +287,12 @@ void mtl_render_draw_indexed(
     uint32_t index_type,
     void *index_buffer,
     uint64_t index_offset,
+    uint32_t instances);
+void mtl_render_draw_patches(
+    void *enc,
+    uint32_t control_points,
+    uint32_t patch_start,
+    uint32_t patch_count,
     uint32_t instances);
 
 /* blit encoder */

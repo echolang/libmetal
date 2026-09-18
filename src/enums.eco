@@ -25,6 +25,7 @@ public enum PixelFormat : uint32
     case bc1Rgba = 130;
     case bc3Rgba = 134;
     case bc7RgbaUnorm = 152;
+    case bc7RgbaUnorm_srgb = 153;
     case astc4x4Srgb = 186;
     case astc4x4Ldr = 204;
     case depth32Float = 252;
@@ -111,6 +112,12 @@ public enum CullMode : uint32
     case none = 0;
     case front = 1;
     case back = 2;
+}
+
+public enum TriangleFillMode : uint32
+{
+    case fill = 0;
+    case lines = 1;
 }
 
 public enum Winding : uint32
@@ -212,6 +219,36 @@ public enum VertexStepFunction : uint32
     case constant = 0;
     case perVertex = 1;
     case perInstance = 2;
+    case perPatch = 3;
+    case perPatchControlPoint = 4;
+}
+
+public enum TessellationPartitionMode : uint32
+{
+    case pow2 = 0;
+    case integer = 1;
+    case fractionalOdd = 2;
+    case fractionalEven = 3;
+}
+
+public enum TessellationFactorFormat : uint32
+{
+    case half = 0;
+}
+
+public enum TessellationFactorStepFunction : uint32
+{
+    case constant = 0;
+    case perPatch = 1;
+    case perInstance = 2;
+    case perPatchAndPerInstance = 3;
+}
+
+public enum TessellationControlPointIndexType : uint32
+{
+    case none = 0;
+    case uint16 = 1;
+    case uint32 = 2;
 }
 
 public enum LanguageVersion : uint32

@@ -33,6 +33,7 @@ internal extern {
     function mtl_device_count as cDeviceCount() : uint64;
     function mtl_device_at as cDeviceAt(uint64 $i) : ptr<mtl_device>;
     function mtl_device_name as cDeviceName(ptr<mtl_device> $device, ptr<uint8> $buf, usize $cap) : void;
+    function mtl_device_max_tessellation_factor as cDeviceMaxTessellationFactor(ptr<mtl_device> $device) : uint64;
     function mtl_device_new_queue as cDeviceNewQueue(ptr<mtl_device> $device, ptr<const uint8> $label) : ptr<mtl_queue>;
     function mtl_device_new_buffer as cDeviceNewBuffer(ptr<mtl_device> $device, uint64 $length, uint32 $options) : ptr<mtl_buffer>;
     function mtl_device_new_buffer_bytes as cDeviceNewBufferBytes(
@@ -177,6 +178,22 @@ internal extern {
         ptr<mtl_sampler> $sampler,
         uint32 $index
     ) : void;
+    function mtl_render_set_vertex_texture as cRenderSetVertexTexture(
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_texture> $texture,
+        uint32 $index
+    ) : void;
+    function mtl_render_set_vertex_sampler as cRenderSetVertexSampler(
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_sampler> $sampler,
+        uint32 $index
+    ) : void;
+    function mtl_render_set_tessellation_factor_buffer as cRenderSetTessellationFactorBuffer(
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_buffer> $buffer,
+        uint64 $offset,
+        uint32 $instanceStride
+    ) : void;
     function mtl_render_set_viewport as cRenderSetViewport(
         ptr<mtl_render_encoder> $enc,
         float64 $originX,
@@ -195,6 +212,7 @@ internal extern {
     ) : void;
     function mtl_render_set_cull as cRenderSetCull(ptr<mtl_render_encoder> $enc, uint32 $mode) : void;
     function mtl_render_set_winding as cRenderSetWinding(ptr<mtl_render_encoder> $enc, uint32 $winding) : void;
+    function mtl_render_set_triangle_fill as cRenderSetTriangleFill(ptr<mtl_render_encoder> $enc, uint32 $mode) : void;
     function mtl_render_draw as cRenderDraw(
         ptr<mtl_render_encoder> $enc,
         uint32 $primitive,
@@ -209,6 +227,13 @@ internal extern {
         uint32 $indexType,
         ptr<mtl_buffer> $indexBuffer,
         uint64 $indexOffset,
+        uint32 $instances
+    ) : void;
+    function mtl_render_draw_patches as cRenderDrawPatches(
+        ptr<mtl_render_encoder> $enc,
+        uint32 $controlPoints,
+        uint32 $patchStart,
+        uint32 $patchCount,
         uint32 $instances
     ) : void;
 

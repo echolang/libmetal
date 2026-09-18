@@ -41,6 +41,12 @@ public struct RenderPipelineDescriptor
     public BlendFactor $destinationAlphaBlendFactor = .zero;
     public BlendOperation $alphaBlendOperation = .add;
     public uint32 $writeMask = 15;
+    public uint32 $maxTessellationFactor = 16;
+    public TessellationPartitionMode $tessellationPartitionMode = .pow2;
+    public TessellationFactorFormat $tessellationFactorFormat = .half;
+    public TessellationFactorStepFunction $tessellationFactorStepFunction = .constant;
+    public Winding $tessellationOutputWindingOrder = .clockwise;
+    public TessellationControlPointIndexType $tessellationControlPointIndexType = .none;
 
     internal const function abi() : AbiRenderPipeline
     {
@@ -169,7 +175,13 @@ internal function packRenderPipeline(const RenderPipelineDescriptor& $d) : AbiRe
         $d->sourceAlphaBlendFactor->value(),
         $d->destinationAlphaBlendFactor->value(),
         $d->alphaBlendOperation->value(),
-        $d->writeMask
+        $d->writeMask,
+        $d->maxTessellationFactor,
+        $d->tessellationPartitionMode->value(),
+        $d->tessellationFactorFormat->value(),
+        $d->tessellationFactorStepFunction->value(),
+        $d->tessellationOutputWindingOrder->value(),
+        $d->tessellationControlPointIndexType->value()
     );
 }
 

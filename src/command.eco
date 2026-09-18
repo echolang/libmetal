@@ -275,6 +275,21 @@ public class RenderCommandEncoder
         cRenderSetFragmentSampler($this->raw(), $sampler->raw(), $index);
     }
 
+    public function setVertexTexture(Texture $texture, index: uint32 $index) : void
+    {
+        cRenderSetVertexTexture($this->raw(), $texture->raw(), $index);
+    }
+
+    public function setVertexSamplerState(SamplerState $sampler, index: uint32 $index) : void
+    {
+        cRenderSetVertexSampler($this->raw(), $sampler->raw(), $index);
+    }
+
+    public function setTessellationFactorBuffer(Buffer $buffer, uint64 $offset = 0, uint32 $instanceStride = 0) : void
+    {
+        cRenderSetTessellationFactorBuffer($this->raw(), $buffer->raw(), $offset, $instanceStride);
+    }
+
     public function setViewport(Viewport $viewport) : void
     {
         cRenderSetViewport(
@@ -301,6 +316,11 @@ public class RenderCommandEncoder
     public function setFrontFacing(Winding $winding) : void
     {
         cRenderSetWinding($this->raw(), $winding->value());
+    }
+
+    public function setTriangleFillMode(TriangleFillMode $mode) : void
+    {
+        cRenderSetTriangleFill($this->raw(), $mode->value());
     }
 
     public function drawPrimitives(
@@ -331,6 +351,16 @@ public class RenderCommandEncoder
             $indexBufferOffset as uint64,
             $instanceCount
         );
+    }
+
+    public function drawPatches(
+        uint32 $controlPoints,
+        uint32 $patchStart,
+        uint32 $patchCount,
+        uint32 $instanceCount = 1
+    ) : void
+    {
+        cRenderDrawPatches($this->raw(), $controlPoints, $patchStart, $patchCount, $instanceCount);
     }
 }
 

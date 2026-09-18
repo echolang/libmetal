@@ -68,6 +68,11 @@ public class Device
         return takeCString($p);
     }
 
+    public const function maxTessellationFactor() : uint32
+    {
+        return cDeviceMaxTessellationFactor($this->raw()) as uint32;
+    }
+
     public function newCommandQueue(string? $label = null) : CommandQueue?
     {
         string $text = guard $label else {

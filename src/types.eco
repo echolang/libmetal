@@ -220,6 +220,12 @@ internal struct AbiRenderPipeline
     uint32 $dstA;
     uint32 $aOp;
     uint32 $writeMask;
+    uint32 $maxTessellationFactor;
+    uint32 $tessellationPartitionMode;
+    uint32 $tessellationFactorFormat;
+    uint32 $tessellationFactorStep;
+    uint32 $tessellationOutputWinding;
+    uint32 $tessellationControlPointIndexType;
 }
 
 internal struct AbiDepthStencil

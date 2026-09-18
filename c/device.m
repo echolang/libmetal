@@ -39,6 +39,22 @@ void mtl_device_name(void *device, char *buf, size_t cap)
     mtl_copy_nsstring(d.name, buf, cap);
 }
 
+uint64_t mtl_device_max_tessellation_factor(void *device)
+{
+    id<MTLDevice> d = mtl_id(device);
+    if ([d supportsFamily:MTLGPUFamilyApple4]) {
+        return 64;
+    }
+
+#if TARGET_OS_OSX || TARGET_OS_MACCATALYST
+    if ([d supportsFamily:MTLGPUFamilyMac2]) {
+        return 64;
+    }
+#endif
+
+    return 16;
+}
+
 void *mtl_device_new_queue(void *device, const char *label)
 {
     id<MTLDevice> d = mtl_id(device);

@@ -163,6 +163,30 @@ void mtl_render_set_fragment_sampler(void *enc, void *sampler, uint32_t index)
     [e setFragmentSamplerState:mtl_id(sampler) atIndex:(NSUInteger)index];
 }
 
+void mtl_render_set_vertex_texture(void *enc, void *texture, uint32_t index)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e setVertexTexture:mtl_id(texture) atIndex:(NSUInteger)index];
+}
+
+void mtl_render_set_vertex_sampler(void *enc, void *sampler, uint32_t index)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e setVertexSamplerState:mtl_id(sampler) atIndex:(NSUInteger)index];
+}
+
+void mtl_render_set_tessellation_factor_buffer(
+    void *enc,
+    void *buffer,
+    uint64_t offset,
+    uint32_t instance_stride)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e setTessellationFactorBuffer:mtl_id(buffer)
+                           offset:(NSUInteger)offset
+                   instanceStride:(NSUInteger)instance_stride];
+}
+
 void mtl_render_set_viewport(
     void *enc,
     double origin_x,
@@ -196,6 +220,12 @@ void mtl_render_set_winding(void *enc, uint32_t winding)
     [e setFrontFacingWinding:(MTLWinding)winding];
 }
 
+void mtl_render_set_triangle_fill(void *enc, uint32_t mode)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e setTriangleFillMode:(MTLTriangleFillMode)mode];
+}
+
 void mtl_render_draw(void *enc, uint32_t primitive, uint32_t start, uint32_t count, uint32_t instances)
 {
     id<MTLRenderCommandEncoder> e = mtl_id(enc);
@@ -221,6 +251,23 @@ void mtl_render_draw_indexed(
                  indexBuffer:mtl_id(index_buffer)
            indexBufferOffset:(NSUInteger)index_offset
                instanceCount:(NSUInteger)instances];
+}
+
+void mtl_render_draw_patches(
+    void *enc,
+    uint32_t control_points,
+    uint32_t patch_start,
+    uint32_t patch_count,
+    uint32_t instances)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e drawPatches:(NSUInteger)control_points
+        patchStart:(NSUInteger)patch_start
+        patchCount:(NSUInteger)patch_count
+  patchIndexBuffer:nil
+patchIndexBufferOffset:0
+     instanceCount:(NSUInteger)instances
+      baseInstance:0];
 }
 
 void mtl_blit_end(void *enc)

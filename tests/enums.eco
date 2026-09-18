@@ -10,7 +10,10 @@ test pixel_formats
     assert(mtl::PixelFormat::depth32Float->value() == 252);
     assert(mtl::PixelFormat::depth32Float_stencil8->value() == 260);
     assert(mtl::PixelFormat::astc4x4Srgb->value() == 186);
+    assert(mtl::PixelFormat::astc4x4Ldr->value() == 204);
     assert(mtl::PixelFormat::bc1Rgba->value() == 130);
+    assert(mtl::PixelFormat::bc7RgbaUnorm->value() == 152);
+    assert(mtl::PixelFormat::bc7RgbaUnorm_srgb->value() == 153);
 }
 
 test storage_and_resource_options
@@ -28,10 +31,18 @@ test storage_and_resource_options
 test primitive_and_load
 {
     assert(mtl::PrimitiveType::triangle->value() == 3);
+    assert(mtl::TriangleFillMode::fill->value() == 0);
+    assert(mtl::TriangleFillMode::lines->value() == 1);
     assert(mtl::LoadAction::clear->value() == 2);
     assert(mtl::StoreAction::store->value() == 1);
     assert(mtl::IndexType::uint16->value() == 0);
     assert(mtl::IndexType::uint32->value() == 1);
+    assert(mtl::VertexStepFunction::perPatch->value() == 3);
+    assert(mtl::VertexStepFunction::perPatchControlPoint->value() == 4);
+    assert(mtl::TessellationPartitionMode::pow2->value() == 0);
+    assert(mtl::TessellationFactorStepFunction::constant->value() == 0);
+    assert(mtl::TessellationFactorStepFunction::perInstance->value() == 2);
+    assert(mtl::Winding::clockwise->value() == 0);
 }
 
 test language_version

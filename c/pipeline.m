@@ -152,6 +152,13 @@ void *mtl_device_new_render_pipeline(
 
     apply_vertex_desc(pd, &desc->vertex);
 
+    pd.maxTessellationFactor = (NSUInteger)desc->max_tessellation_factor;
+    pd.tessellationPartitionMode = (MTLTessellationPartitionMode)desc->tessellation_partition_mode;
+    pd.tessellationFactorFormat = (MTLTessellationFactorFormat)desc->tessellation_factor_format;
+    pd.tessellationFactorStepFunction = (MTLTessellationFactorStepFunction)desc->tessellation_factor_step;
+    pd.tessellationOutputWindingOrder = (MTLWinding)desc->tessellation_output_winding;
+    pd.tessellationControlPointIndexType = (MTLTessellationControlPointIndexType)desc->tessellation_control_point_index_type;
+
     NSError *error = nil;
     id<MTLDevice> d = mtl_id(device);
     id<MTLRenderPipelineState> ps = [d newRenderPipelineStateWithDescriptor:pd error:&error];
