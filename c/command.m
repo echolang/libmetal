@@ -18,6 +18,26 @@ void mtl_command_wait(void *cmd)
     [c waitUntilCompleted];
 }
 
+double mtl_command_gpu_start(void *cmd)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    if (c.status != MTLCommandBufferStatusCompleted) {
+        return 0.0;
+    }
+
+    return c.GPUStartTime;
+}
+
+double mtl_command_gpu_end(void *cmd)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    if (c.status != MTLCommandBufferStatusCompleted) {
+        return 0.0;
+    }
+
+    return c.GPUEndTime;
+}
+
 void mtl_command_present(void *cmd, void *drawable)
 {
     id<MTLCommandBuffer> c = mtl_id(cmd);

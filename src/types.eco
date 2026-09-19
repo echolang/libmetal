@@ -189,6 +189,14 @@ internal struct AbiVertexDesc
     AbiVertexAttr $attr5;
     AbiVertexAttr $attr6;
     AbiVertexAttr $attr7;
+    AbiVertexAttr $attr8;
+    AbiVertexAttr $attr9;
+    AbiVertexAttr $attr10;
+    AbiVertexAttr $attr11;
+    AbiVertexAttr $attr12;
+    AbiVertexAttr $attr13;
+    AbiVertexAttr $attr14;
+    AbiVertexAttr $attr15;
     uint32 $attrCount;
     AbiVertexLayout $layout0;
     AbiVertexLayout $layout1;

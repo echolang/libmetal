@@ -105,8 +105,8 @@ internal function packVertexDesc(const VertexDescriptor& $d) : AbiVertexDesc
     usize $na = $d->attributes->count();
     usize $nl = $d->layouts->count();
 
-    if ($na > 8) {
-        $na = 8;
+    if ($na > 16) {
+        $na = 16;
     }
 
     if ($nl > 4) {
@@ -122,6 +122,14 @@ internal function packVertexDesc(const VertexDescriptor& $d) : AbiVertexDesc
         packAttr($d->attributes, 5),
         packAttr($d->attributes, 6),
         packAttr($d->attributes, 7),
+        packAttr($d->attributes, 8),
+        packAttr($d->attributes, 9),
+        packAttr($d->attributes, 10),
+        packAttr($d->attributes, 11),
+        packAttr($d->attributes, 12),
+        packAttr($d->attributes, 13),
+        packAttr($d->attributes, 14),
+        packAttr($d->attributes, 15),
         $na as uint32,
         packLayout($d->layouts, 0),
         packLayout($d->layouts, 1),

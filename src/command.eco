@@ -144,6 +144,19 @@ public class CommandBuffer
         cCommandWait($this->raw());
     }
 
+    /**
+     * GPU timeline seconds. 0 until the buffer has completed.
+     */
+    public const function gpuStart() : float64
+    {
+        return cCommandGpuStart($this->raw());
+    }
+
+    public const function gpuEnd() : float64
+    {
+        return cCommandGpuEnd($this->raw());
+    }
+
     public function present(Drawable $drawable) : void
     {
         cCommandPresent($this->raw(), $drawable->raw());

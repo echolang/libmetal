@@ -99,7 +99,7 @@ typedef struct {
     uint32_t step_rate;
 } mtl_vertex_layout;
 
-#define MTL_MAX_VERTEX_ATTR 8
+#define MTL_MAX_VERTEX_ATTR 16
 #define MTL_MAX_VERTEX_LAYOUT 4
 #define MTL_MAX_COLOR 8
 
@@ -238,6 +238,8 @@ void *mtl_library_new_function(void *library, const char *name);
 void *mtl_queue_command_buffer(void *queue);
 void mtl_command_commit(void *cmd);
 void mtl_command_wait(void *cmd);
+double mtl_command_gpu_start(void *cmd);
+double mtl_command_gpu_end(void *cmd);
 void mtl_command_present(void *cmd, void *drawable);
 void mtl_command_present_after(void *cmd, void *drawable, double seconds);
 void mtl_command_signal_event(void *cmd, void *event, uint64_t value);

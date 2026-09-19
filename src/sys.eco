@@ -114,6 +114,8 @@ internal extern {
     function mtl_queue_command_buffer as cQueueCommandBuffer(ptr<mtl_queue> $queue) : ptr<mtl_command_buffer>;
     function mtl_command_commit as cCommandCommit(ptr<mtl_command_buffer> $cmd) : void;
     function mtl_command_wait as cCommandWait(ptr<mtl_command_buffer> $cmd) : void;
+    function mtl_command_gpu_start as cCommandGpuStart(ptr<mtl_command_buffer> $cmd) : float64;
+    function mtl_command_gpu_end as cCommandGpuEnd(ptr<mtl_command_buffer> $cmd) : float64;
     function mtl_command_present as cCommandPresent(ptr<mtl_command_buffer> $cmd, ptr<mtl_drawable> $drawable) : void;
     function mtl_command_present_after as cCommandPresentAfter(
         ptr<mtl_command_buffer> $cmd,
