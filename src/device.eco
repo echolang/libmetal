@@ -197,4 +197,65 @@ public class Device
     {
         return SharedEvent::adopt(cDeviceNewSharedEvent($this->raw()));
     }
+
+    /**
+     * Whether pass descriptors may carry timestamp samples at `$point`.
+     */
+    public const function supportsCounterSampling(CounterSamplingPoint $point) : bool
+    {
+        return cDeviceSupportsCounterSampling($this->raw(), $point->value()) != 0;
+    }
+
+    public const function hasTimestampCounters() : bool
+    {
+        return cDeviceHasTimestampCounters($this->raw()) != 0;
+    }
+
+    /**
+     * A timestamp sample buffer with room for `$count` samples.
+     */
+    public function newCounterSampleBuffer(
+        uint64 $count,
+        StorageMode $storage = .shared,
+        string? $label = null
+    ) : result<CounterSampleBuffer, Error>
+    {
+        string $text = $label ?? '';
+        ptr<const uint8> $cstr = null;
+
+        if ($label != null) {
+            $cstr:$ = $text->cstr();
+        }
+
+        string $err = '';
+        ptr<uint8> $ep = errSpare($err);
+        ptr<mtl_counter_sample_buffer> $p = cDeviceNewCounterSampleBuffer(
+            $this->raw(),
+            $count,
+            $storage->value(),
+            $cstr,
+            $ep,
+            ERR_CAP
+        );
+
+        if ($p == null) {
+            return .error(Error::other(takeCString($ep)));
+        }
+
+        CounterSampleBuffer $buf = guard CounterSampleBuffer::adopt($p) else {
+            return .error(Error::other('counter sample buffer pointer was null'));
+        }
+        return .ok($buf);
+    }
+
+    /**
+     * CPU and GPU clocks read together, for correlating resolved GPU timestamps.
+     */
+    public const function sampleTimestamps() : Timestamps
+    {
+        uint64 $cpu = 0;
+        uint64 $gpu = 0;
+        cDeviceSampleTimestamps($this->raw(), &$cpu, &$gpu);
+        return Timestamps($cpu, $gpu);
+    }
 }

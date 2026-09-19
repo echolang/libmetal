@@ -265,3 +265,25 @@ public enum LanguageVersion : uint32
     case v3_1 = 196609;
     case v3_2 = 196610;
 }
+
+/**
+ * Where a device can sample GPU counters. Apple silicon answers stage boundary only.
+ */
+public enum CounterSamplingPoint : uint32
+{
+    case atStageBoundary = 0;
+    case atDrawBoundary = 1;
+    case atDispatchBoundary = 2;
+    case atTileDispatchBoundary = 3;
+    case atBlitBoundary = 4;
+}
+
+public enum CommandBufferStatus : uint32
+{
+    case notEnqueued = 0;
+    case enqueued = 1;
+    case committed = 2;
+    case scheduled = 3;
+    case completed = 4;
+    case error = 5;
+}

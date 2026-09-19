@@ -1,0 +1,176 @@
+/**
+ * GPU timestamps through a counter sample buffer. No shader compile, so this
+ * survives the test fork. Skips on devices without stage-boundary sampling.
+ */
+
+#[if: os == darwin || os == ios]
+test render_pass_abi_size
+{
+    assert(mem::size<mtl::AbiRenderPass>() == 528, 'AbiRenderPass must match mtl_render_pass');
+    assert(mem::size<mtl::AbiBlitPass>() == 40, 'AbiBlitPass must match mtl_blit_pass');
+}
+
+test counter_error_value_is_set
+{
+    assert(mtl::counterErrorValue() != 0);
+    assert(mtl::COUNTER_DONT_SAMPLE == mtl::cCounterDontSample());
+}
+
+test counter_sample_buffer_timestamps
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    if (!$d->supportsCounterSampling(.atStageBoundary) || !$d->hasTimestampCounters()) {
+        return;
+    }
+
+    mtl::CounterSampleBuffer $buf = guard $d->newCounterSampleBuffer(6, .shared, 'test') else ($e) {
+        die($e->message());
+    }
+    assert($buf->sampleCount() == 6);
+
+    uint32 $usage = mtl::TEXTURE_USAGE_SHADER_READ + mtl::TEXTURE_USAGE_RENDER_TARGET;
+    $srcDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 16, $height: 16, $usage: $usage);
+    mtl::Texture $src = guard $d->newTexture($srcDesc) else {
+        die('mtl: src texture null');
+    }
+    $dstDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 16, $height: 16);
+    mtl::Texture $dst = guard $d->newTexture($dstDesc) else {
+        die('mtl: dst texture null');
+    }
+
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+    $cmd->setLabel('counter test');
+
+    mtl::RenderPassDescriptor $pass = mtl::RenderPassDescriptor();
+    mtl::ColorAttachment $color = mtl::ColorAttachment($src, .clear, .store, mtl::ClearColor(1.0, 0.0, 0.0, 1.0));
+    $pass->colorAttachments[] = $color;
+    $pass->sample = mtl::RenderPassSample($buf, 0, 1, 2, 3);
+    mtl::RenderCommandEncoder $enc = guard $cmd->renderCommandEncoder($pass) else {
+        die('mtl: no render encoder');
+    }
+    $enc->setLabel('clear');
+    $enc->pushDebugGroup('nothing');
+    $enc->popDebugGroup();
+    $enc->endEncoding();
+
+    mtl::BlitPassDescriptor $blitPass = mtl::BlitPassDescriptor();
+    $blitPass->sample = mtl::BlitPassSample($buf, 4, 5);
+    mtl::BlitCommandEncoder $blit = guard $cmd->blitCommandEncoder($blitPass) else {
+        die('mtl: no blit encoder');
+    }
+    $blit->setLabel('copy');
+    $blit->pushDebugGroup('copy');
+    $blit->popDebugGroup();
+    $blit->copyFromTexture($src, mtl::Origin(), mtl::Size(16, 16), $dst, mtl::Origin());
+    $blit->endEncoding();
+
+    assert($cmd->status() != mtl::CommandBufferStatus::completed);
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+    assert($cmd->status() == mtl::CommandBufferStatus::completed);
+
+    array<uint64> $t = $buf->resolve(0, 6);
+    assert($t->count() == 6, 'six samples resolved');
+    uint64 $bad = mtl::counterErrorValue();
+    usize $k = 0;
+
+    while ($k < 6) {
+        assert($t[$k] != $bad, 'no error samples');
+        $k = $k + 1;
+    }
+
+    // an encoder that draws nothing runs no fragment stage, so those samples stay 0
+    assert($t[0] > 0, 'vertex start sampled');
+    assert($t[1] == 0 || $t[1] >= $t[0], 'vertex end after start');
+    assert($t[3] == 0 || $t[3] >= $t[2], 'fragment end after start');
+    assert($t[4] > 0 && $t[5] >= $t[4], 'blit end after start');
+    // the counter clock and GPUStartTime share one timeline
+    float64 $submitStart = $cmd->gpuStart() * 1000000000.0;
+    float64 $delta = ($t[0] as float64) - $submitStart;
+    if ($delta < 0.0) {
+        $delta = 0.0 - $delta;
+    }
+    assert($delta < 1000000.0, 'counter samples sit on the GPUStartTime clock');
+
+    mtl::Timestamps $now = $d->sampleTimestamps();
+    assert($now->cpuNs > 0);
+    assert($now->gpuTicks > 0);
+}
+
+test counter_partial_sample_does_not_clobber
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    if (!$d->supportsCounterSampling(.atStageBoundary) || !$d->hasTimestampCounters()) {
+        return;
+    }
+
+    mtl::CounterSampleBuffer $buf = guard $d->newCounterSampleBuffer(4, .shared, 'partial') else ($e) {
+        die($e->message());
+    }
+
+    mtl::RenderPassSample $vertexOnly = mtl::RenderPassSample($buf, 0, 1);
+    assert($vertexOnly->fragmentStart == mtl::COUNTER_DONT_SAMPLE);
+    assert($vertexOnly->fragmentEnd == mtl::COUNTER_DONT_SAMPLE);
+
+    uint32 $usage = mtl::TEXTURE_USAGE_SHADER_READ + mtl::TEXTURE_USAGE_RENDER_TARGET;
+    $srcDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 16, $height: 16, $usage: $usage);
+    mtl::Texture $src = guard $d->newTexture($srcDesc) else {
+        die('mtl: src texture null');
+    }
+    $dstDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 16, $height: 16);
+    mtl::Texture $dst = guard $d->newTexture($dstDesc) else {
+        die('mtl: dst texture null');
+    }
+
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+
+    mtl::RenderPassDescriptor $pass = mtl::RenderPassDescriptor();
+    $pass->colorAttachments[] = mtl::ColorAttachment($src, .clear, .store, mtl::ClearColor(1.0, 0.0, 0.0, 1.0));
+    $pass->sample = $vertexOnly;
+    mtl::RenderCommandEncoder $enc = guard $cmd->renderCommandEncoder($pass) else {
+        die('mtl: no render encoder');
+    }
+    $enc->endEncoding();
+
+    mtl::BlitPassDescriptor $blitPass = mtl::BlitPassDescriptor();
+    $blitPass->sample = mtl::BlitPassSample($buf, 2, 3);
+    mtl::BlitCommandEncoder $blit = guard $cmd->blitCommandEncoder($blitPass) else {
+        die('mtl: no blit encoder');
+    }
+    $blit->copyFromTexture($src, mtl::Origin(), mtl::Size(16, 16), $dst, mtl::Origin());
+    $blit->endEncoding();
+
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+
+    array<uint64> $t = $buf->resolve(0, 4);
+    assert($t->count() == 4, 'four samples resolved');
+    // fragment defaulted to dont-sample; if it had written slot 0, vertex start would be 0
+    assert($t[0] > 0, 'vertex start not clobbered by unsampled fragment');
+    assert($t[2] > 0 && $t[3] >= $t[2], 'blit end after start');
+}
+#[end]

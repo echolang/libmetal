@@ -1,0 +1,96 @@
+/**
+ * `id<MTLCounterSampleBuffer>` for GPU timestamps. Pass descriptors carry a
+ * `RenderPassSample` or `BlitPassSample`; a null `$sample` means do not attach.
+ * An index of `COUNTER_DONT_SAMPLE` skips that stage, same as Metal. Resolve
+ * only after the command buffer completed.
+ */
+
+namespace mtl;
+
+/**
+ * Metal's `MTLCounterDontSample`. An index of this value skips that stage.
+ */
+public const uint64 COUNTER_DONT_SAMPLE = std::math::MAX_UINT64;
+
+/**
+ * A CPU / GPU clock pair read at the same instant, from `Device.sampleTimestamps`.
+ * `$cpuNs` is mach absolute time in nanoseconds; `$gpuTicks` is the GPU counter clock,
+ * nanoseconds on Apple silicon and device ticks elsewhere.
+ */
+public struct Timestamps
+{
+    public uint64 $cpuNs;
+    public uint64 $gpuTicks;
+}
+
+/**
+ * The value a failed sample resolves to.
+ */
+public function counterErrorValue() : uint64
+{
+    return cCounterErrorValue();
+}
+
+#[atomic]
+public class CounterSampleBuffer
+{
+    private ptr<mtl_counter_sample_buffer> $id;
+
+    private constructor(ptr<mtl_counter_sample_buffer> $id)
+    {
+        $this->id = $id;
+    }
+
+    destructor()
+    {
+        if ($this->id != null) {
+            cRelease(asObj($this->id));
+            $this->id:$ = null;
+        }
+    }
+
+    internal const function raw() : ptr<mtl_counter_sample_buffer>
+    {
+        return live($this->id, 'CounterSampleBuffer handle is null');
+    }
+
+    internal static function adopt(ptr<mtl_counter_sample_buffer> $id) : CounterSampleBuffer?
+    {
+        if ($id == null) {
+            return null;
+        }
+
+        return CounterSampleBuffer($id);
+    }
+
+    public const function sampleCount() : uint64
+    {
+        return cCounterSampleBufferCount($this->raw());
+    }
+
+    /**
+     * Resolve `$count` timestamps from `$first` into `$out`, which must hold at least
+     * `$count` values. Returns how many landed; 0 before the command buffer completed.
+     * A failed sample reads as `counterErrorValue()`.
+     */
+    public function resolve(uint64 $first, uint64 $count, ptr<uint64> $out) : uint64
+    {
+        return cCounterSampleBufferResolve($this->raw(), $first, $count, $out);
+    }
+
+    /**
+     * Allocating form of `resolve`. Empty before completion.
+     */
+    public function resolve(uint64 $first, uint64 $count) : array<uint64>
+    {
+        array<uint64> $out = arr::room<uint64>($count as usize);
+
+        if ($count == 0) {
+            return $out;
+        }
+
+        uint64 $n = cCounterSampleBufferResolve($this->raw(), $first, $count, $out->spare());
+        $out->commit($n as usize);
+        return $out;
+    }
+}

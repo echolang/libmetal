@@ -148,6 +148,18 @@ typedef struct {
     mtl_clear_color clear;
 } mtl_color_attach;
 
+/*
+ * GPU timestamp attachment for a pass descriptor. sample_buffer NULL means
+ * do not attach. An index of MTLCounterDontSample skips that stage. A render
+ * pass samples index[0..3] = start of vertex, end of vertex, start of
+ * fragment, end of fragment; a blit pass samples index[0..1] = encoder
+ * start, end.
+ */
+typedef struct {
+    void *sample_buffer;
+    uint64_t index[4];
+} mtl_sample_attach;
+
 typedef struct {
     mtl_color_attach colors[MTL_MAX_COLOR];
     uint32_t color_count;
@@ -157,7 +169,12 @@ typedef struct {
     float depth_clear;
     uint32_t depth_level;
     uint32_t depth_slice;
+    mtl_sample_attach sample;
 } mtl_render_pass;
+
+typedef struct {
+    mtl_sample_attach sample;
+} mtl_blit_pass;
 
 /* device */
 
@@ -195,6 +212,23 @@ void *mtl_device_new_compute_pipeline(
     size_t err_cap);
 void *mtl_device_new_depth_stencil(void *device, const mtl_depth_stencil_desc *desc);
 void *mtl_device_new_shared_event(void *device);
+
+/* counters (GPU timestamps) */
+
+int32_t mtl_device_supports_counter_sampling(void *device, uint32_t point);
+int32_t mtl_device_has_timestamp_counters(void *device);
+void *mtl_device_new_counter_sample_buffer(
+    void *device,
+    uint64_t count,
+    uint32_t storage_mode,
+    const char *label,
+    char *err,
+    size_t err_cap);
+uint64_t mtl_counter_sample_buffer_count(void *buf);
+uint64_t mtl_counter_sample_buffer_resolve(void *buf, uint64_t first, uint64_t count, uint64_t *out);
+uint64_t mtl_counter_error_value(void);
+uint64_t mtl_counter_dont_sample(void);
+void mtl_device_sample_timestamps(void *device, uint64_t *cpu_ns, uint64_t *gpu_ticks);
 
 /* buffer / texture */
 
@@ -248,12 +282,17 @@ uint64_t mtl_shared_event_value(void *event);
 void mtl_shared_event_set_value(void *event, uint64_t value);
 int32_t mtl_shared_event_wait(void *event, uint64_t value, uint64_t timeout_ms);
 void *mtl_command_render(void *cmd, const mtl_render_pass *pass);
-void *mtl_command_blit(void *cmd);
+void *mtl_command_blit(void *cmd, const mtl_blit_pass *pass);
 void *mtl_command_compute(void *cmd);
+uint32_t mtl_command_status(void *cmd);
+void mtl_command_set_label(void *cmd, const char *label);
 
 /* render encoder */
 
 void mtl_render_end(void *enc);
+void mtl_render_set_label(void *enc, const char *label);
+void mtl_render_push_debug_group(void *enc, const char *label);
+void mtl_render_pop_debug_group(void *enc);
 void mtl_render_set_pipeline(void *enc, void *pipeline);
 void mtl_render_set_depth_stencil(void *enc, void *state);
 void mtl_render_set_vertex_buffer(void *enc, void *buffer, uint64_t offset, uint32_t index);
@@ -300,6 +339,9 @@ void mtl_render_draw_patches(
 /* blit encoder */
 
 void mtl_blit_end(void *enc);
+void mtl_blit_set_label(void *enc, const char *label);
+void mtl_blit_push_debug_group(void *enc, const char *label);
+void mtl_blit_pop_debug_group(void *enc);
 void mtl_blit_copy_buffer(
     void *enc,
     void *src,
@@ -329,6 +371,9 @@ void mtl_blit_copy_texture(
 /* compute encoder */
 
 void mtl_compute_end(void *enc);
+void mtl_compute_set_label(void *enc, const char *label);
+void mtl_compute_push_debug_group(void *enc, const char *label);
+void mtl_compute_pop_debug_group(void *enc);
 void mtl_compute_set_pipeline(void *enc, void *pipeline);
 void mtl_compute_set_buffer(void *enc, void *buffer, uint64_t offset, uint32_t index);
 void mtl_compute_set_bytes(void *enc, const void *bytes, uint64_t length, uint32_t index);

@@ -125,8 +125,16 @@ GPU-free enum values always. Device and buffer tests need a Metal device. They `
 cd examples
 echoc run --target devices
 echoc run --target compute
+echoc run --target counters
 echoc run --target clear -- --frames 120
 echoc run --target triangle -- --frames 120
 ```
 
-`clear` and `triangle` open a window and close themselves after N swaps.
+`clear` and `triangle` open a window and close themselves after N swaps. `counters` prints GPU timestamps for a clear and a blit. A pass descriptor carries one optional sample:
+
+```echo
+$pass->sample = mtl::RenderPassSample($buf, 0, 1, 2, 3);
+$blitPass->sample = mtl::BlitPassSample($buf, 4, 5);
+```
+
+Omitted stage indices stay `COUNTER_DONT_SAMPLE`, Metal's skip value. A null `$sample` means do not attach a sample buffer.

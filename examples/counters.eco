@@ -1,0 +1,86 @@
+/*
+ * GPU timestamps: one cleared render pass and one blit, both sampled into a
+ * counter sample buffer, plus the CPU / GPU clock ratio.
+ *
+ *   echoc run --target counters
+ */
+
+use std::time;
+
+if (!mtl::available()) {
+    die('no Metal device');
+}
+
+mtl::Device $d = guard mtl::Device::systemDefault() else {
+    die('systemDefault returned null');
+}
+
+if (!$d->supportsCounterSampling(.atStageBoundary) || !$d->hasTimestampCounters()) {
+    die('this device has no stage-boundary timestamp counters');
+}
+
+mtl::Timestamps $c0 = $d->sampleTimestamps();
+time::sleep(.millis(50));
+mtl::Timestamps $c1 = $d->sampleTimestamps();
+float64 $nsPerTick = (($c1->cpuNs - $c0->cpuNs) as float64) / (($c1->gpuTicks - $c0->gpuTicks) as float64);
+echo "gpu clock: {$nsPerTick:.4f} ns per tick";
+
+mtl::CounterSampleBuffer $buf = guard $d->newCounterSampleBuffer(6, .shared, 'counters') else ($e) {
+    die($e->message());
+}
+
+uint32 $usage = mtl::TEXTURE_USAGE_SHADER_READ + mtl::TEXTURE_USAGE_RENDER_TARGET;
+$srcDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 1024, $height: 1024, $usage: $usage);
+mtl::Texture $src = guard $d->newTexture($srcDesc) else {
+    die('src texture null');
+}
+$dstDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 1024, $height: 1024);
+mtl::Texture $dst = guard $d->newTexture($dstDesc) else {
+    die('dst texture null');
+}
+
+mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+    die('no command queue');
+}
+mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+    die('no command buffer');
+}
+
+mtl::RenderPassDescriptor $pass = mtl::RenderPassDescriptor();
+$pass->colorAttachments[] = mtl::ColorAttachment($src, .clear, .store, mtl::ClearColor(0.2, 0.4, 0.6, 1.0));
+$pass->sample = mtl::RenderPassSample($buf, 0, 1, 2, 3);
+mtl::RenderCommandEncoder $enc = guard $cmd->renderCommandEncoder($pass) else {
+    die('no render encoder');
+}
+$enc->endEncoding();
+
+mtl::BlitPassDescriptor $blitPass = mtl::BlitPassDescriptor();
+$blitPass->sample = mtl::BlitPassSample($buf, 4, 5);
+mtl::BlitCommandEncoder $blit = guard $cmd->blitCommandEncoder($blitPass) else {
+    die('no blit encoder');
+}
+$blit->copyFromTexture($src, mtl::Origin(), mtl::Size(1024, 1024), $dst, mtl::Origin());
+$blit->endEncoding();
+
+$cmd->commit();
+$cmd->waitUntilCompleted();
+
+array<uint64> $t = $buf->resolve(0, 6);
+if ($t->count() != 6) {
+    die('resolve returned fewer than six samples');
+}
+
+float64 $copyNs = (($t[5] - $t[4]) as float64) * $nsPerTick;
+float64 $submitNs = ($cmd->gpuEnd() - $cmd->gpuStart()) * 1000000000.0;
+
+// a pass with no draw runs no vertex or fragment stage, so those samples stay 0
+if ($t[1] == 0 || $t[3] == 0) {
+    echo 'clear 1024x1024: no vertex / fragment stage ran (stage samples are 0)';
+} else {
+    float64 $vertexNs = (($t[1] - $t[0]) as float64) * $nsPerTick;
+    float64 $fragmentNs = (($t[3] - $t[2]) as float64) * $nsPerTick;
+    echo "clear 1024x1024: vertex {$vertexNs:.0f} ns, fragment {$fragmentNs:.0f} ns";
+}
+
+echo "copy  1024x1024: {$copyNs:.0f} ns";
+echo "submit:          {$submitNs:.0f} ns";

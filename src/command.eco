@@ -5,104 +5,6 @@
 
 namespace mtl;
 
-public struct ColorAttachment
-{
-    public Texture $texture;
-    public LoadAction $loadAction = .clear;
-    public StoreAction $storeAction = .store;
-    public ClearColor $clearColor;
-    /** mip level to render into */
-    public uint32 $level = 0;
-    /** array slice; a cube face is a slice */
-    public uint32 $slice = 0;
-}
-
-public struct RenderPassDescriptor
-{
-    public array<ColorAttachment> $colorAttachments = array<ColorAttachment>();
-    public Texture? $depthTexture = null;
-    public LoadAction $depthLoadAction = .clear;
-    public StoreAction $depthStoreAction = .dontCare;
-    public float32 $depthClear = 1.0f;
-    /** mip level to render into */
-    public uint32 $depthLevel = 0;
-    /** array slice; a cube face is a slice */
-    public uint32 $depthSlice = 0;
-
-    internal const function abi() : AbiRenderPass
-    {
-        return packRenderPass($this);
-    }
-}
-
-internal function packColorAttach(const array<ColorAttachment>& $a, usize $i) : AbiColorAttach
-{
-    if ($i >= $a->count()) {
-        return AbiColorAttach(null, 0, 0, 0, 0, AbiClearColor(0.0, 0.0, 0.0, 1.0));
-    }
-
-    $c = $a[$i];
-    return AbiColorAttach(
-        $c->texture->raw(),
-        $c->loadAction->value(),
-        $c->storeAction->value(),
-        $c->level,
-        $c->slice,
-        $c->clearColor->abi()
-    );
-}
-
-internal function packRenderPass(const RenderPassDescriptor& $d) : AbiRenderPass
-{
-    usize $n = $d->colorAttachments->count();
-
-    if ($n > 8) {
-        $n = 8;
-    }
-
-    Texture $dt = guard $d->depthTexture else {
-        return AbiRenderPass(
-            packColorAttach($d->colorAttachments, 0),
-            packColorAttach($d->colorAttachments, 1),
-            packColorAttach($d->colorAttachments, 2),
-            packColorAttach($d->colorAttachments, 3),
-            packColorAttach($d->colorAttachments, 4),
-            packColorAttach($d->colorAttachments, 5),
-            packColorAttach($d->colorAttachments, 6),
-            packColorAttach($d->colorAttachments, 7),
-            $n as uint32,
-            0,
-            null,
-            $d->depthLoadAction->value(),
-            $d->depthStoreAction->value(),
-            $d->depthClear,
-            $d->depthLevel,
-            $d->depthSlice,
-            0
-        );
-    }
-
-    return AbiRenderPass(
-        packColorAttach($d->colorAttachments, 0),
-        packColorAttach($d->colorAttachments, 1),
-        packColorAttach($d->colorAttachments, 2),
-        packColorAttach($d->colorAttachments, 3),
-        packColorAttach($d->colorAttachments, 4),
-        packColorAttach($d->colorAttachments, 5),
-        packColorAttach($d->colorAttachments, 6),
-        packColorAttach($d->colorAttachments, 7),
-        $n as uint32,
-        0,
-        $dt->raw(),
-        $d->depthLoadAction->value(),
-        $d->depthStoreAction->value(),
-        $d->depthClear,
-        $d->depthLevel,
-        $d->depthSlice,
-        0
-    );
-}
-
 public class CommandBuffer
 {
     private ptr<mtl_command_buffer> $id;
@@ -185,7 +87,32 @@ public class CommandBuffer
 
     public function blitCommandEncoder() : BlitCommandEncoder?
     {
-        return BlitCommandEncoder::adopt(cCommandBlit($this->raw()));
+        return BlitCommandEncoder::adopt(cCommandBlit($this->raw(), null));
+    }
+
+    /**
+     * Blit encoder from a descriptor, for timestamp samples around the copy.
+     */
+    public function blitCommandEncoder(const BlitPassDescriptor& $pass) : BlitCommandEncoder?
+    {
+        $abi = $pass->abi();
+        return BlitCommandEncoder::adopt(cCommandBlit($this->raw(), &$abi));
+    }
+
+    /**
+     * Where the buffer is in its life. `completed` is when GPU times and counters are readable.
+     */
+    public const function status() : CommandBufferStatus
+    {
+        CommandBufferStatus $s = guard CommandBufferStatus::from(cCommandStatus($this->raw())) else {
+            return .error;
+        }
+        return $s;
+    }
+
+    public function setLabel(const string& $label) : void
+    {
+        cCommandSetLabel($this->raw(), $label->cstr());
     }
 
     public function computeCommandEncoder() : ComputeCommandEncoder?
@@ -244,6 +171,24 @@ public class RenderCommandEncoder
 
         cRenderEnd($this->raw());
         $this->ended = true;
+    }
+
+    public function setLabel(const string& $label) : void
+    {
+        cRenderSetLabel($this->raw(), $label->cstr());
+    }
+
+    /**
+     * Xcode GPU capture group. Balance with popDebugGroup before endEncoding.
+     */
+    public function pushDebugGroup(const string& $label) : void
+    {
+        cRenderPushDebugGroup($this->raw(), $label->cstr());
+    }
+
+    public function popDebugGroup() : void
+    {
+        cRenderPopDebugGroup($this->raw());
     }
 
     public function setRenderPipelineState(RenderPipelineState $pipeline) : void
@@ -429,6 +374,24 @@ public class BlitCommandEncoder
         $this->ended = true;
     }
 
+    public function setLabel(const string& $label) : void
+    {
+        cBlitSetLabel($this->raw(), $label->cstr());
+    }
+
+    /**
+     * Xcode GPU capture group. Balance with popDebugGroup before endEncoding.
+     */
+    public function pushDebugGroup(const string& $label) : void
+    {
+        cBlitPushDebugGroup($this->raw(), $label->cstr());
+    }
+
+    public function popDebugGroup() : void
+    {
+        cBlitPopDebugGroup($this->raw());
+    }
+
     public function copyFromBuffer(
         Buffer $source,
         usize $sourceOffset,
@@ -536,6 +499,24 @@ public class ComputeCommandEncoder
 
         cComputeEnd($this->raw());
         $this->ended = true;
+    }
+
+    public function setLabel(const string& $label) : void
+    {
+        cComputeSetLabel($this->raw(), $label->cstr());
+    }
+
+    /**
+     * Xcode GPU capture group. Balance with popDebugGroup before endEncoding.
+     */
+    public function pushDebugGroup(const string& $label) : void
+    {
+        cComputePushDebugGroup($this->raw(), $label->cstr());
+    }
+
+    public function popDebugGroup() : void
+    {
+        cComputePopDebugGroup($this->raw());
     }
 
     public function setComputePipelineState(ComputePipelineState $pipeline) : void

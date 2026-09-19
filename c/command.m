@@ -1,5 +1,27 @@
 #import "internal.h"
 
+#include <stddef.h>
+
+static NSString *mtl_label(const char *label)
+{
+    return label != NULL ? [NSString stringWithUTF8String:label] : nil;
+}
+
+static void mtl_encoder_set_label(id<MTLCommandEncoder> e, const char *label)
+{
+    e.label = mtl_label(label);
+}
+
+static void mtl_encoder_push_debug_group(id<MTLCommandEncoder> e, const char *label)
+{
+    [e pushDebugGroup:label != NULL ? [NSString stringWithUTF8String:label] : @""];
+}
+
+static void mtl_encoder_pop_debug_group(id<MTLCommandEncoder> e)
+{
+    [e popDebugGroup];
+}
+
 void *mtl_queue_command_buffer(void *queue)
 {
     id<MTLCommandQueue> q = mtl_id(queue);
@@ -107,20 +129,59 @@ void *mtl_command_render(void *cmd, const mtl_render_pass *pass)
         pd.depthAttachment.slice = (NSUInteger)pass->depth_slice;
     }
 
+    if (pass->sample.sample_buffer != NULL) {
+        MTLRenderPassSampleBufferAttachmentDescriptor *sa = pd.sampleBufferAttachments[0];
+        sa.sampleBuffer = mtl_id(pass->sample.sample_buffer);
+        sa.startOfVertexSampleIndex = (NSUInteger)pass->sample.index[0];
+        sa.endOfVertexSampleIndex = (NSUInteger)pass->sample.index[1];
+        sa.startOfFragmentSampleIndex = (NSUInteger)pass->sample.index[2];
+        sa.endOfFragmentSampleIndex = (NSUInteger)pass->sample.index[3];
+    }
+
     id<MTLCommandBuffer> c = mtl_id(cmd);
     return mtl_retain_id([c renderCommandEncoderWithDescriptor:pd]);
+}
+
+_Static_assert(sizeof(mtl_render_pass) == 528, "mtl_render_pass layout drifted from AbiRenderPass");
+_Static_assert(offsetof(mtl_render_pass, sample) == 488, "mtl_render_pass.sample offset drifted from AbiRenderPass");
+_Static_assert(sizeof(mtl_blit_pass) == 40, "mtl_blit_pass layout drifted from AbiBlitPass");
+
+void *mtl_command_blit(void *cmd, const mtl_blit_pass *pass)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+
+    if (pass == NULL || pass->sample.sample_buffer == NULL) {
+        return mtl_retain_id([c blitCommandEncoder]);
+    }
+
+    if (@available(macOS 11.0, iOS 14.0, tvOS 14.0, *)) {
+        MTLBlitPassDescriptor *bd = [MTLBlitPassDescriptor blitPassDescriptor];
+        MTLBlitPassSampleBufferAttachmentDescriptor *sa = bd.sampleBufferAttachments[0];
+        sa.sampleBuffer = mtl_id(pass->sample.sample_buffer);
+        sa.startOfEncoderSampleIndex = (NSUInteger)pass->sample.index[0];
+        sa.endOfEncoderSampleIndex = (NSUInteger)pass->sample.index[1];
+        return mtl_retain_id([c blitCommandEncoderWithDescriptor:bd]);
+    }
+
+    return NULL;
+}
+
+uint32_t mtl_command_status(void *cmd)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    return (uint32_t)c.status;
+}
+
+void mtl_command_set_label(void *cmd, const char *label)
+{
+    id<MTLCommandBuffer> c = mtl_id(cmd);
+    c.label = mtl_label(label);
 }
 
 void mtl_blit_generate_mipmaps(void *enc, void *texture)
 {
     id<MTLBlitCommandEncoder> e = mtl_id(enc);
     [e generateMipmapsForTexture:mtl_id(texture)];
-}
-
-void *mtl_command_blit(void *cmd)
-{
-    id<MTLCommandBuffer> c = mtl_id(cmd);
-    return mtl_retain_id([c blitCommandEncoder]);
 }
 
 void *mtl_command_compute(void *cmd)
@@ -133,6 +194,21 @@ void mtl_render_end(void *enc)
 {
     id<MTLRenderCommandEncoder> e = mtl_id(enc);
     [e endEncoding];
+}
+
+void mtl_render_set_label(void *enc, const char *label)
+{
+    mtl_encoder_set_label(mtl_id(enc), label);
+}
+
+void mtl_render_push_debug_group(void *enc, const char *label)
+{
+    mtl_encoder_push_debug_group(mtl_id(enc), label);
+}
+
+void mtl_render_pop_debug_group(void *enc)
+{
+    mtl_encoder_pop_debug_group(mtl_id(enc));
 }
 
 void mtl_render_set_pipeline(void *enc, void *pipeline)
@@ -296,6 +372,21 @@ void mtl_blit_end(void *enc)
     [e endEncoding];
 }
 
+void mtl_blit_set_label(void *enc, const char *label)
+{
+    mtl_encoder_set_label(mtl_id(enc), label);
+}
+
+void mtl_blit_push_debug_group(void *enc, const char *label)
+{
+    mtl_encoder_push_debug_group(mtl_id(enc), label);
+}
+
+void mtl_blit_pop_debug_group(void *enc)
+{
+    mtl_encoder_pop_debug_group(mtl_id(enc));
+}
+
 void mtl_blit_copy_buffer(
     void *enc,
     void *src,
@@ -346,6 +437,21 @@ void mtl_compute_end(void *enc)
 {
     id<MTLComputeCommandEncoder> e = mtl_id(enc);
     [e endEncoding];
+}
+
+void mtl_compute_set_label(void *enc, const char *label)
+{
+    mtl_encoder_set_label(mtl_id(enc), label);
+}
+
+void mtl_compute_push_debug_group(void *enc, const char *label)
+{
+    mtl_encoder_push_debug_group(mtl_id(enc), label);
+}
+
+void mtl_compute_pop_debug_group(void *enc)
+{
+    mtl_encoder_pop_debug_group(mtl_id(enc));
 }
 
 void mtl_compute_set_pipeline(void *enc, void *pipeline)

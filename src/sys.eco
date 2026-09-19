@@ -25,6 +25,7 @@ internal extern {
     struct mtl_layer;
     struct mtl_drawable;
     struct mtl_shared_event;
+    struct mtl_counter_sample_buffer;
 
     function mtl_retain as cRetain(ptr<uint8> $obj) : void;
     function mtl_release as cRelease(ptr<uint8> $obj) : void;
@@ -75,6 +76,33 @@ internal extern {
         ptr<const AbiDepthStencil> $desc
     ) : ptr<mtl_depth_stencil>;
     function mtl_device_new_shared_event as cDeviceNewSharedEvent(ptr<mtl_device> $device) : ptr<mtl_shared_event>;
+    function mtl_device_supports_counter_sampling as cDeviceSupportsCounterSampling(
+        ptr<mtl_device> $device,
+        uint32 $point
+    ) : int32;
+    function mtl_device_has_timestamp_counters as cDeviceHasTimestampCounters(ptr<mtl_device> $device) : int32;
+    function mtl_device_new_counter_sample_buffer as cDeviceNewCounterSampleBuffer(
+        ptr<mtl_device> $device,
+        uint64 $count,
+        uint32 $storageMode,
+        ptr<const uint8> $label,
+        ptr<uint8> $err,
+        usize $errCap
+    ) : ptr<mtl_counter_sample_buffer>;
+    function mtl_counter_sample_buffer_count as cCounterSampleBufferCount(ptr<mtl_counter_sample_buffer> $buf) : uint64;
+    function mtl_counter_sample_buffer_resolve as cCounterSampleBufferResolve(
+        ptr<mtl_counter_sample_buffer> $buf,
+        uint64 $first,
+        uint64 $count,
+        ptr<uint64> $out
+    ) : uint64;
+    function mtl_counter_error_value as cCounterErrorValue() : uint64;
+    function mtl_counter_dont_sample as cCounterDontSample() : uint64;
+    function mtl_device_sample_timestamps as cDeviceSampleTimestamps(
+        ptr<mtl_device> $device,
+        ptr<uint64> $cpuNs,
+        ptr<uint64> $gpuTicks
+    ) : void;
 
     function mtl_buffer_length as cBufferLength(ptr<mtl_buffer> $buffer) : uint64;
     function mtl_buffer_contents as cBufferContents(ptr<mtl_buffer> $buffer) : ptr<uint8>;
@@ -140,10 +168,15 @@ internal extern {
         uint64 $timeoutMs
     ) : int32;
     function mtl_command_render as cCommandRender(ptr<mtl_command_buffer> $cmd, ptr<const AbiRenderPass> $pass) : ptr<mtl_render_encoder>;
-    function mtl_command_blit as cCommandBlit(ptr<mtl_command_buffer> $cmd) : ptr<mtl_blit_encoder>;
+    function mtl_command_blit as cCommandBlit(ptr<mtl_command_buffer> $cmd, ptr<const AbiBlitPass> $pass) : ptr<mtl_blit_encoder>;
     function mtl_command_compute as cCommandCompute(ptr<mtl_command_buffer> $cmd) : ptr<mtl_compute_encoder>;
+    function mtl_command_status as cCommandStatus(ptr<mtl_command_buffer> $cmd) : uint32;
+    function mtl_command_set_label as cCommandSetLabel(ptr<mtl_command_buffer> $cmd, ptr<const uint8> $label) : void;
 
     function mtl_render_end as cRenderEnd(ptr<mtl_render_encoder> $enc) : void;
+    function mtl_render_set_label as cRenderSetLabel(ptr<mtl_render_encoder> $enc, ptr<const uint8> $label) : void;
+    function mtl_render_push_debug_group as cRenderPushDebugGroup(ptr<mtl_render_encoder> $enc, ptr<const uint8> $label) : void;
+    function mtl_render_pop_debug_group as cRenderPopDebugGroup(ptr<mtl_render_encoder> $enc) : void;
     function mtl_render_set_pipeline as cRenderSetPipeline(ptr<mtl_render_encoder> $enc, ptr<mtl_render_pipeline> $pipeline) : void;
     function mtl_render_set_depth_stencil as cRenderSetDepthStencil(ptr<mtl_render_encoder> $enc, ptr<mtl_depth_stencil> $state) : void;
     function mtl_render_set_vertex_buffer as cRenderSetVertexBuffer(
@@ -240,6 +273,9 @@ internal extern {
     ) : void;
 
     function mtl_blit_end as cBlitEnd(ptr<mtl_blit_encoder> $enc) : void;
+    function mtl_blit_set_label as cBlitSetLabel(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
+    function mtl_blit_push_debug_group as cBlitPushDebugGroup(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
+    function mtl_blit_pop_debug_group as cBlitPopDebugGroup(ptr<mtl_blit_encoder> $enc) : void;
     function mtl_blit_generate_mipmaps as cBlitGenerateMipmaps(
         ptr<mtl_blit_encoder> $enc,
         ptr<mtl_texture> $texture
@@ -272,6 +308,9 @@ internal extern {
     ) : void;
 
     function mtl_compute_end as cComputeEnd(ptr<mtl_compute_encoder> $enc) : void;
+    function mtl_compute_set_label as cComputeSetLabel(ptr<mtl_compute_encoder> $enc, ptr<const uint8> $label) : void;
+    function mtl_compute_push_debug_group as cComputePushDebugGroup(ptr<mtl_compute_encoder> $enc, ptr<const uint8> $label) : void;
+    function mtl_compute_pop_debug_group as cComputePopDebugGroup(ptr<mtl_compute_encoder> $enc) : void;
     function mtl_compute_set_pipeline as cComputeSetPipeline(ptr<mtl_compute_encoder> $enc, ptr<mtl_compute_pipeline> $pipeline) : void;
     function mtl_compute_set_buffer as cComputeSetBuffer(
         ptr<mtl_compute_encoder> $enc,

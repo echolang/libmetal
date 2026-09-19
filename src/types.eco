@@ -271,4 +271,19 @@ internal struct AbiRenderPass
     uint32 $depthLevel;
     uint32 $depthSlice;
     uint32 $pad1;
+    AbiSampleAttach $sample;
+}
+
+internal struct AbiSampleAttach
+{
+    ptr<mtl_counter_sample_buffer> $buffer;
+    uint64 $index0;
+    uint64 $index1;
+    uint64 $index2;
+    uint64 $index3;
+}
+
+internal struct AbiBlitPass
+{
+    AbiSampleAttach $sample;
 }

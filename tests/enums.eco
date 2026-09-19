@@ -64,4 +64,17 @@ test error_message
     assert($e->message() == 'bad msl');
     assert("{$e}" == 'bad msl');
 }
+
+test counter_sampling_and_status
+{
+    assert(mtl::CounterSamplingPoint::atStageBoundary->value() == 0);
+    assert(mtl::CounterSamplingPoint::atDrawBoundary->value() == 1);
+    assert(mtl::CounterSamplingPoint::atBlitBoundary->value() == 4);
+    assert(mtl::CommandBufferStatus::notEnqueued->value() == 0);
+    assert(mtl::CommandBufferStatus::completed->value() == 4);
+    assert(mtl::CommandBufferStatus::error->value() == 5);
+    assert(mtl::CommandBufferStatus::from(4) != null);
+    assert(mtl::CommandBufferStatus::from(9) == null);
+    assert(mtl::COUNTER_DONT_SAMPLE == mtl::cCounterDontSample());
+}
 #[end]
