@@ -1,5 +1,12 @@
 #import "internal.h"
 
+/*
+ * `language_version == 0` means MSL 2.1. Leaving MTLCompileOptions at
+ * alloc-init is not that: on macOS 15 the runtime compiler then rejects
+ * tessellation (`patch_control_point`, `[[patch]]`) as needing macos-metal1.2.
+ * SPIRV-Cross emits MSL 2.1. Newer standards are opt-in via language_version.
+ */
+
 void *mtl_device_new_library_source(
     void *device,
     const char *source,
@@ -20,13 +27,19 @@ void *mtl_device_new_library_source(
 
     if (opts != NULL) {
         co = [[MTLCompileOptions alloc] init];
+        if (@available(macOS 15.0, iOS 18.0, tvOS 18.0, *)) {
+            co.mathMode = opts->fast_math != 0 ? MTLMathModeFast : MTLMathModeSafe;
+        } else {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        co.fastMathEnabled = opts->fast_math != 0;
+            co.fastMathEnabled = opts->fast_math != 0;
 #pragma clang diagnostic pop
+        }
 
         if (opts->language_version != 0) {
             co.languageVersion = (MTLLanguageVersion)opts->language_version;
+        } else {
+            co.languageVersion = MTLLanguageVersion2_1;
         }
     }
 

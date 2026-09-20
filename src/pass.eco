@@ -1,5 +1,6 @@
 /**
  * Pass descriptors and the ABI packers that turn them into C structs.
+ * Render, blit, and compute passes can attach a counter sample buffer.
  */
 
 namespace mtl;
@@ -41,6 +42,16 @@ public struct BlitPassSample
     public uint64 $end = COUNTER_DONT_SAMPLE;
 }
 
+/**
+ * GPU timestamps at compute encoder start and end. Same layout as blit.
+ */
+public struct ComputePassSample
+{
+    public CounterSampleBuffer $buffer;
+    public uint64 $start = COUNTER_DONT_SAMPLE;
+    public uint64 $end = COUNTER_DONT_SAMPLE;
+}
+
 public struct RenderPassDescriptor
 {
     public array<ColorAttachment> $colorAttachments = array<ColorAttachment>();
@@ -70,6 +81,16 @@ public struct BlitPassDescriptor
     }
 }
 
+public struct ComputePassDescriptor
+{
+    public ComputePassSample? $sample = null;
+
+    internal const function abi() : AbiComputePass
+    {
+        return AbiComputePass(packComputeSample($this->sample));
+    }
+}
+
 internal function emptySample() : AbiSampleAttach
 {
     return AbiSampleAttach(null, 0, 0, 0, 0);
@@ -89,18 +110,31 @@ internal function packRenderSample(RenderPassSample? $s) : AbiSampleAttach
     );
 }
 
+internal function packBoundarySample(CounterSampleBuffer $buffer, uint64 $start, uint64 $end) : AbiSampleAttach
+{
+    return AbiSampleAttach(
+        $buffer->raw(),
+        $start,
+        $end,
+        COUNTER_DONT_SAMPLE,
+        COUNTER_DONT_SAMPLE
+    );
+}
+
 internal function packBlitSample(BlitPassSample? $s) : AbiSampleAttach
 {
     BlitPassSample $x = guard $s else {
         return emptySample();
     }
-    return AbiSampleAttach(
-        $x->buffer->raw(),
-        $x->start,
-        $x->end,
-        COUNTER_DONT_SAMPLE,
-        COUNTER_DONT_SAMPLE
-    );
+    return packBoundarySample($x->buffer, $x->start, $x->end);
+}
+
+internal function packComputeSample(ComputePassSample? $s) : AbiSampleAttach
+{
+    ComputePassSample $x = guard $s else {
+        return emptySample();
+    }
+    return packBoundarySample($x->buffer, $x->start, $x->end);
 }
 
 internal function textureRaw(Texture? $t) : ptr<mtl_texture>

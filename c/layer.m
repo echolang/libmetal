@@ -1,6 +1,7 @@
 #import "internal.h"
 
 #import <QuartzCore/CAMetalLayer.h>
+#import <QuartzCore/CATransaction.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
 
@@ -10,6 +11,8 @@ static CAMetalLayer *mtl_new_layer(id<MTLDevice> device, uint64_t width, uint64_
     layer.device = device;
     layer.pixelFormat = (MTLPixelFormat)pixel_format;
     layer.framebufferOnly = YES;
+    // default opaque is NO; WindowServer then composites and vsyncs even with displaySyncEnabled off
+    layer.opaque = YES;
     layer.drawableSize = CGSizeMake((CGFloat)width, (CGFloat)height);
     return layer;
 }
@@ -39,10 +42,11 @@ void *mtl_layer_attach_view(void *device, void *view, uint32_t pixel_format)
 
 #if TARGET_OS_OSX
     CAMetalLayer *layer = mtl_new_layer(mtl_id(device), 1, 1, pixel_format);
-    SEL setLayer = sel_registerName("setLayer:");
     SEL setWantsLayer = sel_registerName("setWantsLayer:");
-    ((void (*)(id, SEL, id))objc_msgSend)(host, setLayer, layer);
+    SEL setLayer = sel_registerName("setLayer:");
+    // wantsLayer first so AppKit does not wrap the metal layer in a backing CALayer
     ((void (*)(id, SEL, BOOL))objc_msgSend)(host, setWantsLayer, YES);
+    ((void (*)(id, SEL, id))objc_msgSend)(host, setLayer, layer);
     return mtl_retain_id(layer);
 #else
     SEL layerSel = sel_registerName("layer");
@@ -55,6 +59,7 @@ void *mtl_layer_attach_view(void *device, void *view, uint32_t pixel_format)
     CAMetalLayer *existing = (CAMetalLayer *)hostLayer;
     existing.device = mtl_id(device);
     existing.pixelFormat = (MTLPixelFormat)pixel_format;
+    existing.opaque = YES;
     return mtl_retain_id(existing);
 #endif
 }
@@ -109,11 +114,20 @@ void mtl_layer_set_framebuffer_only(void *layer, int32_t only)
     l.framebufferOnly = only != 0;
 }
 
+void mtl_layer_set_opaque(void *layer, int32_t opaque)
+{
+    CAMetalLayer *l = mtl_id(layer);
+    l.opaque = opaque != 0;
+}
+
 void mtl_layer_set_display_sync(void *layer, int32_t enabled)
 {
     CAMetalLayer *l = mtl_id(layer);
 #if TARGET_OS_OSX
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
     l.displaySyncEnabled = enabled != 0;
+    [CATransaction commit];
 #else
     (void)l;
     (void)enabled;

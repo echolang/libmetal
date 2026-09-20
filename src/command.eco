@@ -48,6 +48,7 @@ public class CommandBuffer
 
     /**
      * GPU timeline seconds. 0 until the buffer has completed.
+     * Occupancy including driver scheduling and a present encoded on this buffer.
      */
     public const function gpuStart() : float64
     {
@@ -57,6 +58,20 @@ public class CommandBuffer
     public const function gpuEnd() : float64
     {
         return cCommandGpuEnd($this->raw());
+    }
+
+    /**
+     * First / last kernel on this buffer, seconds. 0 until completed.
+     * Occupancy of this buffer's GPU work; excludes present wait.
+     */
+    public const function kernelStart() : float64
+    {
+        return cCommandKernelStart($this->raw());
+    }
+
+    public const function kernelEnd() : float64
+    {
+        return cCommandKernelEnd($this->raw());
     }
 
     public function present(Drawable $drawable) : void
@@ -115,9 +130,31 @@ public class CommandBuffer
         cCommandSetLabel($this->raw(), $label->cstr());
     }
 
+    /**
+     * Xcode GPU capture group on the command buffer. Balance with popDebugGroup.
+     */
+    public function pushDebugGroup(const string& $label) : void
+    {
+        cCommandPushDebugGroup($this->raw(), $label->cstr());
+    }
+
+    public function popDebugGroup() : void
+    {
+        cCommandPopDebugGroup($this->raw());
+    }
+
     public function computeCommandEncoder() : ComputeCommandEncoder?
     {
-        return ComputeCommandEncoder::adopt(cCommandCompute($this->raw()));
+        return ComputeCommandEncoder::adopt(cCommandComputePass($this->raw(), null));
+    }
+
+    /**
+     * Compute encoder from a descriptor, for timestamp samples around the dispatch.
+     */
+    public function computeCommandEncoder(const ComputePassDescriptor& $pass) : ComputeCommandEncoder?
+    {
+        $abi = $pass->abi();
+        return ComputeCommandEncoder::adopt(cCommandComputePass($this->raw(), &$abi));
     }
 }
 
@@ -189,6 +226,21 @@ public class RenderCommandEncoder
     public function popDebugGroup() : void
     {
         cRenderPopDebugGroup($this->raw());
+    }
+
+    /**
+     * Write one timestamp into `$buffer` at `$index`. `barrier: true` is more
+     * deterministic and can change GPU time; lightweight profiling uses false.
+     */
+    public function sampleCounters(CounterSampleBuffer $buffer, uint64 $index, barrier: bool $barrier = false) : void
+    {
+        int32 $b = 0;
+
+        if ($barrier) {
+            $b = 1;
+        }
+
+        cRenderSampleCounters($this->raw(), $buffer->raw(), $index, $b);
     }
 
     public function setRenderPipelineState(RenderPipelineState $pipeline) : void
@@ -392,6 +444,20 @@ public class BlitCommandEncoder
         cBlitPopDebugGroup($this->raw());
     }
 
+    /**
+     * Write one timestamp into `$buffer` at `$index`. `barrier: true` can change GPU time.
+     */
+    public function sampleCounters(CounterSampleBuffer $buffer, uint64 $index, barrier: bool $barrier = false) : void
+    {
+        int32 $b = 0;
+
+        if ($barrier) {
+            $b = 1;
+        }
+
+        cBlitSampleCounters($this->raw(), $buffer->raw(), $index, $b);
+    }
+
     public function copyFromBuffer(
         Buffer $source,
         usize $sourceOffset,
@@ -517,6 +583,20 @@ public class ComputeCommandEncoder
     public function popDebugGroup() : void
     {
         cComputePopDebugGroup($this->raw());
+    }
+
+    /**
+     * Write one timestamp into `$buffer` at `$index`. `barrier: true` can change GPU time.
+     */
+    public function sampleCounters(CounterSampleBuffer $buffer, uint64 $index, barrier: bool $barrier = false) : void
+    {
+        int32 $b = 0;
+
+        if ($barrier) {
+            $b = 1;
+        }
+
+        cComputeSampleCounters($this->raw(), $buffer->raw(), $index, $b);
     }
 
     public function setComputePipelineState(ComputePipelineState $pipeline) : void

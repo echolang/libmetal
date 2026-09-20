@@ -1,6 +1,7 @@
 /**
  * `id<MTLCounterSampleBuffer>` for GPU timestamps. Pass descriptors carry a
- * `RenderPassSample` or `BlitPassSample`; a null `$sample` means do not attach.
+ * `RenderPassSample`, `BlitPassSample`, or `ComputePassSample`; a null `$sample`
+ * means do not attach.
  * An index of `COUNTER_DONT_SAMPLE` skips that stage, same as Metal. Resolve
  * only after the command buffer completed.
  */

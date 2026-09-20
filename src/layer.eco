@@ -4,6 +4,8 @@
  * Three labelled constructors. None of them name AppKit or UIKit.
  * `attachView:` takes the view, not a window. macOS installs a new
  * CAMetalLayer. iOS reuses the view's existing CAMetalLayer.
+ * New layers are opaque; a transparent metal layer is composited by
+ * WindowServer and vsyncs even with displaySyncEnabled off. `setOpaque` undoes that.
  */
 
 namespace mtl;
@@ -100,6 +102,17 @@ public class Layer
         }
 
         cLayerSetFramebufferOnly($this->raw(), $v);
+    }
+
+    public function setOpaque(bool $opaque) : void
+    {
+        int32 $v = 0;
+
+        if ($opaque) {
+            $v = 1;
+        }
+
+        cLayerSetOpaque($this->raw(), $v);
     }
 
     public function setDisplaySync(bool $on) : void

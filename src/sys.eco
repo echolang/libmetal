@@ -144,6 +144,8 @@ internal extern {
     function mtl_command_wait as cCommandWait(ptr<mtl_command_buffer> $cmd) : void;
     function mtl_command_gpu_start as cCommandGpuStart(ptr<mtl_command_buffer> $cmd) : float64;
     function mtl_command_gpu_end as cCommandGpuEnd(ptr<mtl_command_buffer> $cmd) : float64;
+    function mtl_command_kernel_start as cCommandKernelStart(ptr<mtl_command_buffer> $cmd) : float64;
+    function mtl_command_kernel_end as cCommandKernelEnd(ptr<mtl_command_buffer> $cmd) : float64;
     function mtl_command_present as cCommandPresent(ptr<mtl_command_buffer> $cmd, ptr<mtl_drawable> $drawable) : void;
     function mtl_command_present_after as cCommandPresentAfter(
         ptr<mtl_command_buffer> $cmd,
@@ -170,13 +172,25 @@ internal extern {
     function mtl_command_render as cCommandRender(ptr<mtl_command_buffer> $cmd, ptr<const AbiRenderPass> $pass) : ptr<mtl_render_encoder>;
     function mtl_command_blit as cCommandBlit(ptr<mtl_command_buffer> $cmd, ptr<const AbiBlitPass> $pass) : ptr<mtl_blit_encoder>;
     function mtl_command_compute as cCommandCompute(ptr<mtl_command_buffer> $cmd) : ptr<mtl_compute_encoder>;
+    function mtl_command_compute_pass as cCommandComputePass(
+        ptr<mtl_command_buffer> $cmd,
+        ptr<const AbiComputePass> $pass
+    ) : ptr<mtl_compute_encoder>;
     function mtl_command_status as cCommandStatus(ptr<mtl_command_buffer> $cmd) : uint32;
     function mtl_command_set_label as cCommandSetLabel(ptr<mtl_command_buffer> $cmd, ptr<const uint8> $label) : void;
+    function mtl_command_push_debug_group as cCommandPushDebugGroup(ptr<mtl_command_buffer> $cmd, ptr<const uint8> $label) : void;
+    function mtl_command_pop_debug_group as cCommandPopDebugGroup(ptr<mtl_command_buffer> $cmd) : void;
 
     function mtl_render_end as cRenderEnd(ptr<mtl_render_encoder> $enc) : void;
     function mtl_render_set_label as cRenderSetLabel(ptr<mtl_render_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_render_push_debug_group as cRenderPushDebugGroup(ptr<mtl_render_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_render_pop_debug_group as cRenderPopDebugGroup(ptr<mtl_render_encoder> $enc) : void;
+    function mtl_render_sample_counters as cRenderSampleCounters(
+        ptr<mtl_render_encoder> $enc,
+        ptr<mtl_counter_sample_buffer> $buf,
+        uint64 $index,
+        int32 $barrier
+    ) : void;
     function mtl_render_set_pipeline as cRenderSetPipeline(ptr<mtl_render_encoder> $enc, ptr<mtl_render_pipeline> $pipeline) : void;
     function mtl_render_set_depth_stencil as cRenderSetDepthStencil(ptr<mtl_render_encoder> $enc, ptr<mtl_depth_stencil> $state) : void;
     function mtl_render_set_vertex_buffer as cRenderSetVertexBuffer(
@@ -276,6 +290,12 @@ internal extern {
     function mtl_blit_set_label as cBlitSetLabel(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_blit_push_debug_group as cBlitPushDebugGroup(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_blit_pop_debug_group as cBlitPopDebugGroup(ptr<mtl_blit_encoder> $enc) : void;
+    function mtl_blit_sample_counters as cBlitSampleCounters(
+        ptr<mtl_blit_encoder> $enc,
+        ptr<mtl_counter_sample_buffer> $buf,
+        uint64 $index,
+        int32 $barrier
+    ) : void;
     function mtl_blit_generate_mipmaps as cBlitGenerateMipmaps(
         ptr<mtl_blit_encoder> $enc,
         ptr<mtl_texture> $texture
@@ -311,6 +331,12 @@ internal extern {
     function mtl_compute_set_label as cComputeSetLabel(ptr<mtl_compute_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_compute_push_debug_group as cComputePushDebugGroup(ptr<mtl_compute_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_compute_pop_debug_group as cComputePopDebugGroup(ptr<mtl_compute_encoder> $enc) : void;
+    function mtl_compute_sample_counters as cComputeSampleCounters(
+        ptr<mtl_compute_encoder> $enc,
+        ptr<mtl_counter_sample_buffer> $buf,
+        uint64 $index,
+        int32 $barrier
+    ) : void;
     function mtl_compute_set_pipeline as cComputeSetPipeline(ptr<mtl_compute_encoder> $enc, ptr<mtl_compute_pipeline> $pipeline) : void;
     function mtl_compute_set_buffer as cComputeSetBuffer(
         ptr<mtl_compute_encoder> $enc,
@@ -362,6 +388,7 @@ internal extern {
     function mtl_layer_set_contents_scale as cLayerSetContentsScale(ptr<mtl_layer> $layer, float64 $scale) : void;
     function mtl_layer_contents_scale as cLayerContentsScale(ptr<mtl_layer> $layer) : float64;
     function mtl_layer_set_framebuffer_only as cLayerSetFramebufferOnly(ptr<mtl_layer> $layer, int32 $only) : void;
+    function mtl_layer_set_opaque as cLayerSetOpaque(ptr<mtl_layer> $layer, int32 $opaque) : void;
     function mtl_layer_set_display_sync as cLayerSetDisplaySync(ptr<mtl_layer> $layer, int32 $enabled) : void;
     function mtl_layer_display_sync as cLayerDisplaySync(ptr<mtl_layer> $layer) : int32;
     function mtl_layer_set_maximum_drawable_count as cLayerSetMaxDrawables(

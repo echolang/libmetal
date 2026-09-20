@@ -82,7 +82,7 @@ typedef struct {
 
 typedef struct {
     int32_t fast_math;
-    uint32_t language_version; /* 0 = Metal default */
+    uint32_t language_version; /* 0 = MSL 2.1 */
 } mtl_compile_opts;
 
 typedef struct {
@@ -175,6 +175,10 @@ typedef struct {
 typedef struct {
     mtl_sample_attach sample;
 } mtl_blit_pass;
+
+typedef struct {
+    mtl_sample_attach sample;
+} mtl_compute_pass;
 
 /* device */
 
@@ -274,6 +278,8 @@ void mtl_command_commit(void *cmd);
 void mtl_command_wait(void *cmd);
 double mtl_command_gpu_start(void *cmd);
 double mtl_command_gpu_end(void *cmd);
+double mtl_command_kernel_start(void *cmd);
+double mtl_command_kernel_end(void *cmd);
 void mtl_command_present(void *cmd, void *drawable);
 void mtl_command_present_after(void *cmd, void *drawable, double seconds);
 void mtl_command_signal_event(void *cmd, void *event, uint64_t value);
@@ -284,8 +290,11 @@ int32_t mtl_shared_event_wait(void *event, uint64_t value, uint64_t timeout_ms);
 void *mtl_command_render(void *cmd, const mtl_render_pass *pass);
 void *mtl_command_blit(void *cmd, const mtl_blit_pass *pass);
 void *mtl_command_compute(void *cmd);
+void *mtl_command_compute_pass(void *cmd, const mtl_compute_pass *pass);
 uint32_t mtl_command_status(void *cmd);
 void mtl_command_set_label(void *cmd, const char *label);
+void mtl_command_push_debug_group(void *cmd, const char *label);
+void mtl_command_pop_debug_group(void *cmd);
 
 /* render encoder */
 
@@ -293,6 +302,7 @@ void mtl_render_end(void *enc);
 void mtl_render_set_label(void *enc, const char *label);
 void mtl_render_push_debug_group(void *enc, const char *label);
 void mtl_render_pop_debug_group(void *enc);
+void mtl_render_sample_counters(void *enc, void *buf, uint64_t index, int32_t barrier);
 void mtl_render_set_pipeline(void *enc, void *pipeline);
 void mtl_render_set_depth_stencil(void *enc, void *state);
 void mtl_render_set_vertex_buffer(void *enc, void *buffer, uint64_t offset, uint32_t index);
@@ -342,6 +352,7 @@ void mtl_blit_end(void *enc);
 void mtl_blit_set_label(void *enc, const char *label);
 void mtl_blit_push_debug_group(void *enc, const char *label);
 void mtl_blit_pop_debug_group(void *enc);
+void mtl_blit_sample_counters(void *enc, void *buf, uint64_t index, int32_t barrier);
 void mtl_blit_copy_buffer(
     void *enc,
     void *src,
@@ -374,6 +385,7 @@ void mtl_compute_end(void *enc);
 void mtl_compute_set_label(void *enc, const char *label);
 void mtl_compute_push_debug_group(void *enc, const char *label);
 void mtl_compute_pop_debug_group(void *enc);
+void mtl_compute_sample_counters(void *enc, void *buf, uint64_t index, int32_t barrier);
 void mtl_compute_set_pipeline(void *enc, void *pipeline);
 void mtl_compute_set_buffer(void *enc, void *buffer, uint64_t offset, uint32_t index);
 void mtl_compute_set_bytes(void *enc, const void *bytes, uint64_t length, uint32_t index);
@@ -399,6 +411,7 @@ void mtl_layer_get_drawable_size(void *layer, uint64_t *width, uint64_t *height)
 void mtl_layer_set_contents_scale(void *layer, double scale);
 double mtl_layer_contents_scale(void *layer);
 void mtl_layer_set_framebuffer_only(void *layer, int32_t only);
+void mtl_layer_set_opaque(void *layer, int32_t opaque);
 void mtl_layer_set_display_sync(void *layer, int32_t enabled);
 int32_t mtl_layer_display_sync(void *layer);
 void mtl_layer_set_maximum_drawable_count(void *layer, uint32_t count);

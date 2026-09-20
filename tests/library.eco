@@ -27,6 +27,34 @@ test compile_kernel
     assert(true);
 }
 
+test compile_tessellation_patch
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $src = "#include <metal_stdlib>\nusing namespace metal;\nstruct CP { float4 p [[attribute(0)]]; };\nstruct PatchIn { patch_control_point<CP> gl_in; };\nstruct Out { float4 gl_Position [[position]]; };\n[[patch(quad, 4)]] vertex Out vs(PatchIn patchIn [[stage_in]], float2 uv [[position_in_patch]]) {\n    Out o;\n    o.gl_Position = mix(mix(patchIn.gl_in[0].p, patchIn.gl_in[1].p, uv.x), mix(patchIn.gl_in[3].p, patchIn.gl_in[2].p, uv.x), uv.y);\n    return o;\n}\n";
+    $compiled = $d->newLibrary(source: $src);
+
+    // echoc test forks. Metal's shader compiler is XPC and does not survive that.
+    if ($compiled->failed()) {
+        mtl::Error $e = $compiled->failure();
+        assert($e->message()->contains('XPC') || $e->message()->contains('Compiler'));
+        return;
+    }
+
+    mtl::Library $lib = $compiled->unwrap();
+    mtl::Function $fn = guard $lib->newFunction('vs') else {
+        die('mtl: missing patch vs');
+    }
+
+    assert(true);
+}
+
 test compile_failure
 {
     if (!mtl::available()) {

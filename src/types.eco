@@ -287,3 +287,8 @@ internal struct AbiBlitPass
 {
     AbiSampleAttach $sample;
 }
+
+internal struct AbiComputePass
+{
+    AbiSampleAttach $sample;
+}

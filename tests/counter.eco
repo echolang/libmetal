@@ -1,6 +1,8 @@
 /**
- * GPU timestamps through a counter sample buffer. No shader compile, so this
- * survives the test fork. Skips on devices without stage-boundary sampling.
+ * GPU timestamps through a counter sample buffer. Render and blit paths
+ * skip the shader compiler so they survive the test fork. Compute encoder
+ * samples need a dispatch; that test treats XPC compile failure as skip.
+ * Skips on devices without stage-boundary sampling.
  */
 
 #[if: os == darwin || os == ios]
@@ -8,6 +10,7 @@ test render_pass_abi_size
 {
     assert(mem::size<mtl::AbiRenderPass>() == 528, 'AbiRenderPass must match mtl_render_pass');
     assert(mem::size<mtl::AbiBlitPass>() == 40, 'AbiBlitPass must match mtl_blit_pass');
+    assert(mem::size<mtl::AbiComputePass>() == 40, 'AbiComputePass must match mtl_compute_pass');
 }
 
 test counter_error_value_is_set
@@ -96,6 +99,10 @@ test counter_sample_buffer_timestamps
     assert($t[1] == 0 || $t[1] >= $t[0], 'vertex end after start');
     assert($t[3] == 0 || $t[3] >= $t[2], 'fragment end after start');
     assert($t[4] > 0 && $t[5] >= $t[4], 'blit end after start');
+    float64 $k0 = $cmd->kernelStart();
+    float64 $k1 = $cmd->kernelEnd();
+    assert($k0 > 0.0 && $k1 >= $k0, 'kernel times after a blit');
+
     // the counter clock and GPUStartTime share one timeline
     float64 $submitStart = $cmd->gpuStart() * 1000000000.0;
     float64 $delta = ($t[0] as float64) - $submitStart;
@@ -172,5 +179,111 @@ test counter_partial_sample_does_not_clobber
     // fragment defaulted to dont-sample; if it had written slot 0, vertex start would be 0
     assert($t[0] > 0, 'vertex start not clobbered by unsampled fragment');
     assert($t[2] > 0 && $t[3] >= $t[2], 'blit end after start');
+}
+
+test counter_compute_pass_timestamps
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    if (!$d->supportsCounterSampling(.atStageBoundary) || !$d->hasTimestampCounters()) {
+        return;
+    }
+
+    // encoder-boundary samples stay 0 without a dispatch, unlike a render clear
+    $src = "#include <metal_stdlib>\nusing namespace metal;\nkernel void fill(device uint *out [[buffer(0)]], uint gid [[thread_position_in_grid]]) { out[gid] = 42; }";
+    $compiled = $d->newLibrary(source: $src);
+
+    if ($compiled->failed()) {
+        mtl::Error $e = $compiled->failure();
+        assert($e->message()->contains('XPC') || $e->message()->contains('Compiler'));
+        return;
+    }
+
+    mtl::Library $lib = $compiled->unwrap();
+    mtl::Function $fn = guard $lib->newFunction('fill') else {
+        die('mtl: missing fill');
+    }
+    mtl::ComputePipelineState $ps = guard $d->newComputePipelineState($fn) else ($e) {
+        die($e->message());
+    }
+    mtl::Buffer $b = guard $d->newBuffer(4) else {
+        die('mtl: no buffer');
+    }
+    mtl::CounterSampleBuffer $buf = guard $d->newCounterSampleBuffer(2, .shared, 'compute') else ($e) {
+        die($e->message());
+    }
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+    mtl::ComputePassDescriptor $pass = mtl::ComputePassDescriptor();
+    $pass->sample = mtl::ComputePassSample($buf, 0, 1);
+    mtl::ComputeCommandEncoder $enc = guard $cmd->computeCommandEncoder($pass) else {
+        die('mtl: no compute encoder');
+    }
+    $enc->setComputePipelineState($ps);
+    $enc->setBuffer($b, index: 0);
+    $enc->dispatchThreads(mtl::Size(1, 1), mtl::Size(1, 1));
+    $enc->endEncoding();
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+    array<uint64> $t = $buf->resolve(0, 2);
+    assert($t->count() == 2, 'two compute samples');
+    uint64 $bad = mtl::counterErrorValue();
+    assert($t[0] != $bad && $t[1] != $bad, 'no error samples');
+    assert($t[0] > 0 && $t[1] >= $t[0], 'compute end after start');
+}
+
+test counter_sample_counters_at_blit_boundary
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    if (!$d->supportsCounterSampling(.atBlitBoundary) || !$d->hasTimestampCounters()) {
+        return;
+    }
+
+    mtl::CounterSampleBuffer $buf = guard $d->newCounterSampleBuffer(1, .shared, 'blit-boundary') else ($e) {
+        die($e->message());
+    }
+    $srcDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 16, $height: 16);
+    mtl::Texture $src = guard $d->newTexture($srcDesc) else {
+        die('mtl: src texture null');
+    }
+    $dstDesc = mtl::TextureDescriptor($pixelFormat: .rgba8Unorm, $width: 16, $height: 16);
+    mtl::Texture $dst = guard $d->newTexture($dstDesc) else {
+        die('mtl: dst texture null');
+    }
+    mtl::CommandQueue $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+    mtl::CommandBuffer $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+    mtl::BlitCommandEncoder $blit = guard $cmd->blitCommandEncoder() else {
+        die('mtl: no blit encoder');
+    }
+    $blit->copyFromTexture($src, mtl::Origin(), mtl::Size(16, 16), $dst, mtl::Origin());
+    $blit->sampleCounters($buf, 0);
+    $blit->endEncoding();
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+    array<uint64> $t = $buf->resolve(0, 1);
+    assert($t->count() == 1, 'one blit-boundary sample');
+    assert($t[0] != mtl::counterErrorValue(), 'no error sample');
+    assert($t[0] > 0, 'blit-boundary sample written');
 }
 #[end]

@@ -253,6 +253,7 @@ public enum TessellationControlPointIndexType : uint32
 
 public enum LanguageVersion : uint32
 {
+    // c shim maps 0 to msl 2.1
     case default = 0;
     case v1_1 = 65537;
     case v1_2 = 65538;
