@@ -73,6 +73,24 @@ public class Device
         return cDeviceMaxTessellationFactor($this->raw()) as uint32;
     }
 
+    /**
+     * Driver total for resources this device owns. Drops when the last retain on a texture or buffer dies.
+     */
+    public const function currentAllocatedSize() : uint64
+    {
+        return cDeviceCurrentAllocated($this->raw());
+    }
+
+    public const function recommendedMaxWorkingSetSize() : uint64
+    {
+        return cDeviceWorkingSet($this->raw());
+    }
+
+    public const function hasUnifiedMemory() : bool
+    {
+        return cDeviceHasUnified($this->raw()) != 0;
+    }
+
     public function newCommandQueue(string? $label = null) : CommandQueue?
     {
         string $text = guard $label else {

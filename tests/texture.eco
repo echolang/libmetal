@@ -138,4 +138,41 @@ test texture_blit_copy
     $dst->getBytes(ptr<uint8>(&$got), 4, $region);
     assert($got == $px);
 }
+
+test texture_destroy_realloc_same_size
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    mtl::Device $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    uint32 $usage = mtl::TEXTURE_USAGE_SHADER_READ + mtl::TEXTURE_USAGE_RENDER_TARGET;
+    $desc = mtl::TextureDescriptor(
+        $pixelFormat: .rgba16Float,
+        $width: 1024,
+        $height: 1024,
+        $usage: $usage,
+        $storageMode: .shared
+    );
+    mtl::Texture $held = guard $d->newTexture($desc) else {
+        die('mtl: first texture null');
+    }
+    uint64 $one = $d->currentAllocatedSize();
+    assert($one >= 8 * 1024 * 1024, 'one texture should land in currentAllocatedSize');
+
+    int32 $i = 0;
+    while ($i < 8) {
+        mtl::Texture $next = guard $d->newTexture($desc) else {
+            die('mtl: recycle texture null');
+        }
+        $held = $next;
+        $i = $i + 1;
+    }
+
+    uint64 $end = $d->currentAllocatedSize();
+    assert($end < $one + 4 * 1024 * 1024, 'destroy then same-size alloc must not grow');
+}
 #[end]

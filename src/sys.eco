@@ -35,6 +35,9 @@ internal extern {
     function mtl_device_at as cDeviceAt(uint64 $i) : ptr<mtl_device>;
     function mtl_device_name as cDeviceName(ptr<mtl_device> $device, ptr<uint8> $buf, usize $cap) : void;
     function mtl_device_max_tessellation_factor as cDeviceMaxTessellationFactor(ptr<mtl_device> $device) : uint64;
+    function mtl_device_current_allocated as cDeviceCurrentAllocated(ptr<mtl_device> $device) : uint64;
+    function mtl_device_working_set as cDeviceWorkingSet(ptr<mtl_device> $device) : uint64;
+    function mtl_device_has_unified as cDeviceHasUnified(ptr<mtl_device> $device) : int32;
     function mtl_device_new_queue as cDeviceNewQueue(ptr<mtl_device> $device, ptr<const uint8> $label) : ptr<mtl_queue>;
     function mtl_device_new_buffer as cDeviceNewBuffer(ptr<mtl_device> $device, uint64 $length, uint32 $options) : ptr<mtl_buffer>;
     function mtl_device_new_buffer_bytes as cDeviceNewBufferBytes(

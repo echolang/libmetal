@@ -55,6 +55,24 @@ uint64_t mtl_device_max_tessellation_factor(void *device)
     return 16;
 }
 
+uint64_t mtl_device_current_allocated(void *device)
+{
+    id<MTLDevice> d = mtl_id(device);
+    return (uint64_t)d.currentAllocatedSize;
+}
+
+uint64_t mtl_device_working_set(void *device)
+{
+    id<MTLDevice> d = mtl_id(device);
+    return (uint64_t)d.recommendedMaxWorkingSetSize;
+}
+
+int32_t mtl_device_has_unified(void *device)
+{
+    id<MTLDevice> d = mtl_id(device);
+    return d.hasUnifiedMemory ? 1 : 0;
+}
+
 void *mtl_device_new_queue(void *device, const char *label)
 {
     id<MTLDevice> d = mtl_id(device);
