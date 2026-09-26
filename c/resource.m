@@ -53,6 +53,7 @@ void *mtl_device_new_sampler(void *device, const mtl_sampler_desc *desc)
     sd.tAddressMode = (MTLSamplerAddressMode)desc->t_address;
     sd.rAddressMode = (MTLSamplerAddressMode)desc->r_address;
     sd.normalizedCoordinates = desc->normalized != 0;
+    sd.maxAnisotropy = desc->max_anisotropy < 1 ? 1 : (NSUInteger)desc->max_anisotropy;
 
     id<MTLDevice> d = mtl_id(device);
     return mtl_retain_id([d newSamplerStateWithDescriptor:sd]);

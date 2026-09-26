@@ -78,6 +78,7 @@ typedef struct {
     uint32_t t_address;
     uint32_t r_address;
     uint32_t normalized;
+    uint32_t max_anisotropy;
 } mtl_sampler_desc;
 
 typedef struct {

@@ -14,6 +14,11 @@ public struct SamplerDescriptor
     public SamplerAddressMode $rAddressMode = .clampToEdge;
     public bool $normalizedCoordinates = true;
 
+    /**
+     * Most samples along the footprint's long axis, 1 to 16. 1 is plain trilinear.
+     */
+    public uint32 $maxAnisotropy = 1;
+
     internal const function abi() : AbiSamplerDesc
     {
         int32 $norm = 0;
@@ -29,7 +34,8 @@ public struct SamplerDescriptor
             $this->sAddressMode->value(),
             $this->tAddressMode->value(),
             $this->rAddressMode->value(),
-            $norm as uint32
+            $norm as uint32,
+            $this->maxAnisotropy
         );
     }
 }

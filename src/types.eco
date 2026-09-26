@@ -155,6 +155,7 @@ internal struct AbiSamplerDesc
     uint32 $tAddress;
     uint32 $rAddress;
     uint32 $normalized;
+    uint32 $maxAnisotropy;
 }
 
 internal struct AbiCompileOpts
