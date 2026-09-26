@@ -620,6 +620,11 @@ public class ComputeCommandEncoder
         cComputeSetTexture($this->raw(), $texture->raw(), $index);
     }
 
+    public function setSamplerState(SamplerState $sampler, index: uint32 $index) : void
+    {
+        cComputeSetSampler($this->raw(), $sampler->raw(), $index);
+    }
+
     public function dispatchThreads(Size $threadsPerGrid, Size $threadsPerThreadgroup) : void
     {
         cComputeDispatch(

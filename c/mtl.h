@@ -393,6 +393,7 @@ void mtl_compute_set_pipeline(void *enc, void *pipeline);
 void mtl_compute_set_buffer(void *enc, void *buffer, uint64_t offset, uint32_t index);
 void mtl_compute_set_bytes(void *enc, const void *bytes, uint64_t length, uint32_t index);
 void mtl_compute_set_texture(void *enc, void *texture, uint32_t index);
+void mtl_compute_set_sampler(void *enc, void *sampler, uint32_t index);
 void mtl_compute_dispatch(
     void *enc,
     uint64_t tw,

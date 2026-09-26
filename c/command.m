@@ -559,6 +559,12 @@ void mtl_compute_set_texture(void *enc, void *texture, uint32_t index)
     [e setTexture:mtl_id(texture) atIndex:(NSUInteger)index];
 }
 
+void mtl_compute_set_sampler(void *enc, void *sampler, uint32_t index)
+{
+    id<MTLComputeCommandEncoder> e = mtl_id(enc);
+    [e setSamplerState:mtl_id(sampler) atIndex:(NSUInteger)index];
+}
+
 void mtl_compute_dispatch(
     void *enc,
     uint64_t tw,

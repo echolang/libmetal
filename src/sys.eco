@@ -354,6 +354,7 @@ internal extern {
         uint32 $index
     ) : void;
     function mtl_compute_set_texture as cComputeSetTexture(ptr<mtl_compute_encoder> $enc, ptr<mtl_texture> $texture, uint32 $index) : void;
+    function mtl_compute_set_sampler as cComputeSetSampler(ptr<mtl_compute_encoder> $enc, ptr<mtl_sampler> $sampler, uint32 $index) : void;
     function mtl_compute_dispatch as cComputeDispatch(
         ptr<mtl_compute_encoder> $enc,
         uint64 $tw,

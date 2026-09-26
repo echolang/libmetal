@@ -206,6 +206,7 @@ public enum VertexFormat : uint32
     case uchar2 = 1;
     case uchar3 = 2;
     case uchar4 = 3;
+    case uchar4Normalized = 9;
     case float = 28;
     case float2 = 29;
     case float3 = 30;
