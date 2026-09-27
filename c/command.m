@@ -381,6 +381,12 @@ void mtl_render_set_cull(void *enc, uint32_t mode)
     [e setCullMode:(MTLCullMode)mode];
 }
 
+void mtl_render_set_depth_bias(void *enc, float bias, float slope, float clamp)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e setDepthBias:bias slopeScale:slope clamp:clamp];
+}
+
 void mtl_render_set_winding(void *enc, uint32_t winding)
 {
     id<MTLRenderCommandEncoder> e = mtl_id(enc);

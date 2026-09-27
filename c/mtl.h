@@ -332,6 +332,7 @@ void mtl_render_set_viewport(
     double zfar);
 void mtl_render_set_scissor(void *enc, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 void mtl_render_set_cull(void *enc, uint32_t mode);
+void mtl_render_set_depth_bias(void *enc, float bias, float slope, float clamp);
 void mtl_render_set_winding(void *enc, uint32_t winding);
 void mtl_render_set_triangle_fill(void *enc, uint32_t mode);
 void mtl_render_draw(void *enc, uint32_t primitive, uint32_t start, uint32_t count, uint32_t instances);

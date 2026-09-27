@@ -263,6 +263,7 @@ internal extern {
         uint32 $height
     ) : void;
     function mtl_render_set_cull as cRenderSetCull(ptr<mtl_render_encoder> $enc, uint32 $mode) : void;
+    function mtl_render_set_depth_bias as cRenderSetDepthBias(ptr<mtl_render_encoder> $enc, float32 $bias, float32 $slope, float32 $clamp) : void;
     function mtl_render_set_winding as cRenderSetWinding(ptr<mtl_render_encoder> $enc, uint32 $winding) : void;
     function mtl_render_set_triangle_fill as cRenderSetTriangleFill(ptr<mtl_render_encoder> $enc, uint32 $mode) : void;
     function mtl_render_draw as cRenderDraw(

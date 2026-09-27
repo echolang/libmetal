@@ -323,6 +323,16 @@ public class RenderCommandEncoder
         cRenderSetCull($this->raw(), $mode->value());
     }
 
+    /**
+     * Depth offset for the following draws: a constant `$bias`, plus `$slope` times the
+     * polygon's depth slope, limited by `$clamp` (0 is no limit). Pushes coplanar geometry, a
+     * road over its terrain, off the surface it lies on.
+     */
+    public function setDepthBias(float32 $bias, float32 $slope, float32 $clamp) : void
+    {
+        cRenderSetDepthBias($this->raw(), $bias, $slope, $clamp);
+    }
+
     public function setFrontFacing(Winding $winding) : void
     {
         cRenderSetWinding($this->raw(), $winding->value());
