@@ -382,6 +382,15 @@ public class RenderCommandEncoder
     {
         cRenderDrawPatches($this->raw(), $controlPoints, $patchStart, $patchCount, $instanceCount);
     }
+
+    /**
+     * Non-indexed draw whose vertex count, instance count, first vertex and first instance
+     * are four uint32 the GPU wrote into `$arguments` at `$offset`.
+     */
+    public function drawPrimitives(PrimitiveType $type, indirect: Buffer $arguments, uint64 $offset = 0) : void
+    {
+        cRenderDrawIndirect($this->raw(), $type->value(), $arguments->raw(), $offset);
+    }
 }
 
 public class BlitCommandEncoder
@@ -484,6 +493,14 @@ public class BlitCommandEncoder
             $destinationOffset as uint64,
             $size as uint64
         );
+    }
+
+    /**
+     * Set every byte of `$size` bytes at `$offset` in `$buffer` to `$value`.
+     */
+    public function fillBuffer(Buffer $buffer, usize $offset, usize $size, uint8 $value) : void
+    {
+        cBlitFillBuffer($this->raw(), $buffer->raw(), $offset as uint64, $size as uint64, $value);
     }
 
     /** fills every mip below level 0 from the level above it */
@@ -642,6 +659,22 @@ public class ComputeCommandEncoder
             $threadsPerGrid->width as uint64,
             $threadsPerGrid->height as uint64,
             $threadsPerGrid->depth as uint64,
+            $threadsPerThreadgroup->width as uint64,
+            $threadsPerThreadgroup->height as uint64,
+            $threadsPerThreadgroup->depth as uint64
+        );
+    }
+
+    /**
+     * Dispatch the threadgroup counts the GPU wrote into `$arguments` at `$offset` (three
+     * uint32: groups along x, y and z).
+     */
+    public function dispatchThreadgroups(Buffer $arguments, uint64 $offset = 0, Size $threadsPerThreadgroup) : void
+    {
+        cComputeDispatchIndirect(
+            $this->raw(),
+            $arguments->raw(),
+            $offset,
             $threadsPerThreadgroup->width as uint64,
             $threadsPerThreadgroup->height as uint64,
             $threadsPerThreadgroup->depth as uint64

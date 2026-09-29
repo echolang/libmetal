@@ -290,6 +290,13 @@ internal extern {
         uint32 $instances
     ) : void;
 
+    function mtl_render_draw_indirect as cRenderDrawIndirect(
+        ptr<mtl_render_encoder> $enc,
+        uint32 $primitive,
+        ptr<mtl_buffer> $args,
+        uint64 $argsOffset
+    ) : void;
+
     function mtl_blit_end as cBlitEnd(ptr<mtl_blit_encoder> $enc) : void;
     function mtl_blit_set_label as cBlitSetLabel(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_blit_push_debug_group as cBlitPushDebugGroup(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
@@ -311,6 +318,13 @@ internal extern {
         ptr<mtl_buffer> $dst,
         uint64 $dstOffset,
         uint64 $size
+    ) : void;
+    function mtl_blit_fill_buffer as cBlitFillBuffer(
+        ptr<mtl_blit_encoder> $enc,
+        ptr<mtl_buffer> $dst,
+        uint64 $offset,
+        uint64 $size,
+        uint8 $value
     ) : void;
     function mtl_blit_copy_texture as cBlitCopyTexture(
         ptr<mtl_blit_encoder> $enc,
@@ -361,6 +375,14 @@ internal extern {
         uint64 $tw,
         uint64 $th,
         uint64 $td,
+        uint64 $gw,
+        uint64 $gh,
+        uint64 $gd
+    ) : void;
+    function mtl_compute_dispatch_indirect as cComputeDispatchIndirect(
+        ptr<mtl_compute_encoder> $enc,
+        ptr<mtl_buffer> $args,
+        uint64 $argsOffset,
         uint64 $gw,
         uint64 $gh,
         uint64 $gd

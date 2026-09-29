@@ -443,6 +443,14 @@ patchIndexBufferOffset:0
       baseInstance:0];
 }
 
+void mtl_render_draw_indirect(void *enc, uint32_t primitive, void *args, uint64_t args_offset)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e drawPrimitives:(MTLPrimitiveType)primitive
+       indirectBuffer:mtl_id(args)
+ indirectBufferOffset:(NSUInteger)args_offset];
+}
+
 void mtl_blit_end(void *enc)
 {
     id<MTLBlitCommandEncoder> e = mtl_id(enc);
@@ -483,6 +491,12 @@ void mtl_blit_copy_buffer(
              toBuffer:mtl_id(dst)
     destinationOffset:(NSUInteger)dst_offset
                  size:(NSUInteger)size];
+}
+
+void mtl_blit_fill_buffer(void *enc, void *dst, uint64_t offset, uint64_t size, uint8_t value)
+{
+    id<MTLBlitCommandEncoder> e = mtl_id(enc);
+    [e fillBuffer:mtl_id(dst) range:NSMakeRange((NSUInteger)offset, (NSUInteger)size) value:value];
 }
 
 void mtl_blit_copy_texture(
@@ -584,4 +598,19 @@ void mtl_compute_dispatch(
     MTLSize grid = MTLSizeMake((NSUInteger)tw, (NSUInteger)th, (NSUInteger)td);
     MTLSize group = MTLSizeMake((NSUInteger)gw, (NSUInteger)gh, (NSUInteger)gd);
     [e dispatchThreads:grid threadsPerThreadgroup:group];
+}
+
+void mtl_compute_dispatch_indirect(
+    void *enc,
+    void *args,
+    uint64_t args_offset,
+    uint64_t gw,
+    uint64_t gh,
+    uint64_t gd)
+{
+    id<MTLComputeCommandEncoder> e = mtl_id(enc);
+    MTLSize group = MTLSizeMake((NSUInteger)gw, (NSUInteger)gh, (NSUInteger)gd);
+    [e dispatchThreadgroupsWithIndirectBuffer:mtl_id(args)
+                         indirectBufferOffset:(NSUInteger)args_offset
+                        threadsPerThreadgroup:group];
 }

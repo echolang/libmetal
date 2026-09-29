@@ -350,6 +350,7 @@ void mtl_render_draw_patches(
     uint32_t patch_start,
     uint32_t patch_count,
     uint32_t instances);
+void mtl_render_draw_indirect(void *enc, uint32_t primitive, void *args, uint64_t args_offset);
 
 /* blit encoder */
 
@@ -365,6 +366,7 @@ void mtl_blit_copy_buffer(
     void *dst,
     uint64_t dst_offset,
     uint64_t size);
+void mtl_blit_fill_buffer(void *enc, void *dst, uint64_t offset, uint64_t size, uint8_t value);
 void mtl_blit_generate_mipmaps(void *enc, void *texture);
 void mtl_blit_copy_texture(
     void *enc,
@@ -401,6 +403,13 @@ void mtl_compute_dispatch(
     uint64_t tw,
     uint64_t th,
     uint64_t td,
+    uint64_t gw,
+    uint64_t gh,
+    uint64_t gd);
+void mtl_compute_dispatch_indirect(
+    void *enc,
+    void *args,
+    uint64_t args_offset,
     uint64_t gw,
     uint64_t gh,
     uint64_t gd);
