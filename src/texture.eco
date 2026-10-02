@@ -66,6 +66,15 @@ public class Texture
         return Texture($id);
     }
 
+    /**
+     * The texture's `gpuResourceID`, the word a Metal 3 argument buffer holds for it. A shader
+     * reaching the texture that way needs it made resident with `useResources` in each encoder.
+     */
+    public const function resourceId() : uint64
+    {
+        return cTextureResourceId($this->raw());
+    }
+
     public const function width() : usize
     {
         return cTextureWidth($this->raw()) as usize;

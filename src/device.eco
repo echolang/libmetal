@@ -91,6 +91,15 @@ public class Device
         return cDeviceHasUnified($this->raw()) != 0;
     }
 
+    /**
+     * The GPU is in the Metal 3 family: argument buffers can hold `gpuResourceID`s written from
+     * the CPU, which a bindless texture table needs.
+     */
+    public const function supportsMetal3() : bool
+    {
+        return cDeviceSupportsMetal3($this->raw()) != 0;
+    }
+
     public function newCommandQueue(string? $label = null) : CommandQueue?
     {
         string $text = guard $label else {

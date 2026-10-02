@@ -38,6 +38,7 @@ internal extern {
     function mtl_device_current_allocated as cDeviceCurrentAllocated(ptr<mtl_device> $device) : uint64;
     function mtl_device_working_set as cDeviceWorkingSet(ptr<mtl_device> $device) : uint64;
     function mtl_device_has_unified as cDeviceHasUnified(ptr<mtl_device> $device) : int32;
+    function mtl_device_supports_metal3 as cDeviceSupportsMetal3(ptr<mtl_device> $device) : int32;
     function mtl_device_new_queue as cDeviceNewQueue(ptr<mtl_device> $device, ptr<const uint8> $label) : ptr<mtl_queue>;
     function mtl_device_new_buffer as cDeviceNewBuffer(ptr<mtl_device> $device, uint64 $length, uint32 $options) : ptr<mtl_buffer>;
     function mtl_device_new_buffer_bytes as cDeviceNewBufferBytes(
@@ -138,6 +139,8 @@ internal extern {
         uint32 $slice
     ) : void;
     function mtl_texture_width as cTextureWidth(ptr<mtl_texture> $texture) : uint64;
+    function mtl_texture_resource_id as cTextureResourceId(ptr<mtl_texture> $texture) : uint64;
+    function mtl_sampler_resource_id as cSamplerResourceId(ptr<mtl_sampler> $sampler) : uint64;
     function mtl_texture_height as cTextureHeight(ptr<mtl_texture> $texture) : uint64;
 
     function mtl_library_new_function as cLibraryNewFunction(ptr<mtl_library> $library, ptr<const uint8> $name) : ptr<mtl_function>;
@@ -297,6 +300,16 @@ internal extern {
         uint64 $argsOffset
     ) : void;
 
+    function mtl_render_draw_indexed_indirect as cRenderDrawIndexedIndirect(
+        ptr<mtl_render_encoder> $enc,
+        uint32 $primitive,
+        uint32 $indexType,
+        ptr<mtl_buffer> $indexBuffer,
+        uint64 $indexOffset,
+        ptr<mtl_buffer> $args,
+        uint64 $argsOffset
+    ) : void;
+
     function mtl_blit_end as cBlitEnd(ptr<mtl_blit_encoder> $enc) : void;
     function mtl_blit_set_label as cBlitSetLabel(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
     function mtl_blit_push_debug_group as cBlitPushDebugGroup(ptr<mtl_blit_encoder> $enc, ptr<const uint8> $label) : void;
@@ -370,6 +383,19 @@ internal extern {
     ) : void;
     function mtl_compute_set_texture as cComputeSetTexture(ptr<mtl_compute_encoder> $enc, ptr<mtl_texture> $texture, uint32 $index) : void;
     function mtl_compute_set_sampler as cComputeSetSampler(ptr<mtl_compute_encoder> $enc, ptr<mtl_sampler> $sampler, uint32 $index) : void;
+    function mtl_compute_use_resources as cComputeUseResources(
+        ptr<mtl_compute_encoder> $enc,
+        ptr<const ptr<mtl_texture>> $resources,
+        uint64 $count,
+        uint32 $usage
+    ) : void;
+    function mtl_render_use_resources as cRenderUseResources(
+        ptr<mtl_render_encoder> $enc,
+        ptr<const ptr<mtl_texture>> $resources,
+        uint64 $count,
+        uint32 $usage,
+        uint32 $stages
+    ) : void;
     function mtl_compute_dispatch as cComputeDispatch(
         ptr<mtl_compute_encoder> $enc,
         uint64 $tw,

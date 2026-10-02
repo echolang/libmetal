@@ -19,12 +19,24 @@ public struct SamplerDescriptor
      */
     public uint32 $maxAnisotropy = 1;
 
+    /**
+     * The sampler can sit in an argument buffer (a bindless sampler table): its
+     * `SamplerState.resourceId` is only valid with this set.
+     */
+    public bool $supportArgumentBuffers = false;
+
     internal const function abi() : AbiSamplerDesc
     {
         int32 $norm = 0;
 
         if ($this->normalizedCoordinates) {
             $norm = 1;
+        }
+
+        uint32 $args = 0;
+
+        if ($this->supportArgumentBuffers) {
+            $args = 1;
         }
 
         return AbiSamplerDesc(
@@ -35,7 +47,8 @@ public struct SamplerDescriptor
             $this->tAddressMode->value(),
             $this->rAddressMode->value(),
             $norm as uint32,
-            $this->maxAnisotropy
+            $this->maxAnisotropy,
+            $args
         );
     }
 }
@@ -61,6 +74,15 @@ public class SamplerState
     internal const function raw() : ptr<mtl_sampler>
     {
         return live($this->id, 'SamplerState handle is null');
+    }
+
+    /**
+     * The sampler's `gpuResourceID`, the word a Metal 3 argument buffer holds for it. Only valid
+     * for a sampler made with `supportArgumentBuffers`.
+     */
+    public const function resourceId() : uint64
+    {
+        return cSamplerResourceId($this->raw());
     }
 
     internal static function adopt(ptr<mtl_sampler> $id) : SamplerState?

@@ -1,0 +1,76 @@
+/**
+ * Textures an encoder makes resident in one `useResources` call: the ones a Metal 3 argument
+ * buffer (a bindless texture table) reaches. The set keeps each texture alive and a parallel
+ * array of raw handles, so declaring them costs one call and no allocation per encoder.
+ */
+
+namespace mtl;
+
+public class TextureSet
+{
+    private array<Texture> $textures;
+    private array<ptr<mtl_texture>> $handles;
+
+    public constructor()
+    {
+        $this->textures = array<Texture>();
+        $this->handles = array<ptr<mtl_texture>>();
+    }
+
+    public const function count() : usize
+    {
+        return $this->textures->count();
+    }
+
+    public function reserve(usize $n) : void
+    {
+        $this->textures->reserve($n);
+        $this->handles->reserve($n);
+    }
+
+    /**
+     * Add `$texture` at the end and return its position.
+     */
+    public function add(Texture $texture) : usize
+    {
+        usize $at = $this->textures->count();
+        $this->handles->push($texture->raw());
+        $this->textures->push($texture);
+        return $at;
+    }
+
+    /**
+     * Put `$texture` at position `$i`, which must exist.
+     */
+    public function set(usize $i, Texture $texture) : void
+    {
+        $this->handles[$i] = $texture->raw();
+        $this->textures[$i] = $texture;
+    }
+
+    /**
+     * Drop position `$i`: the last texture moves into it. Order is not kept.
+     */
+    public function remove(usize $i) : void
+    {
+        usize $last = $this->textures->count() - 1;
+        if ($i != $last) {
+            $this->textures[$i] = $this->textures[$last];
+            $this->handles[$i] = $this->handles[$last];
+        }
+
+        $this->textures->pop();
+        $this->handles->pop();
+    }
+
+    public function clear() : void
+    {
+        $this->textures->clear();
+        $this->handles->clear();
+    }
+
+    internal const function data() : ptr<const ptr<mtl_texture>>
+    {
+        return $this->handles->data();
+    }
+}

@@ -67,6 +67,12 @@ uint64_t mtl_device_working_set(void *device)
     return (uint64_t)d.recommendedMaxWorkingSetSize;
 }
 
+int32_t mtl_device_supports_metal3(void *device)
+{
+    id<MTLDevice> d = mtl_id(device);
+    return [d supportsFamily:MTLGPUFamilyMetal3] ? 1 : 0;
+}
+
 int32_t mtl_device_has_unified(void *device)
 {
     id<MTLDevice> d = mtl_id(device);

@@ -54,6 +54,7 @@ void *mtl_device_new_sampler(void *device, const mtl_sampler_desc *desc)
     sd.rAddressMode = (MTLSamplerAddressMode)desc->r_address;
     sd.normalizedCoordinates = desc->normalized != 0;
     sd.maxAnisotropy = desc->max_anisotropy < 1 ? 1 : (NSUInteger)desc->max_anisotropy;
+    sd.supportArgumentBuffers = desc->argument_buffers != 0;
 
     id<MTLDevice> d = mtl_id(device);
     return mtl_retain_id([d newSamplerStateWithDescriptor:sd]);
@@ -123,6 +124,18 @@ void mtl_texture_get_bytes(
      fromRegion:r
     mipmapLevel:(NSUInteger)mip
           slice:(NSUInteger)slice];
+}
+
+uint64_t mtl_texture_resource_id(void *texture)
+{
+    id<MTLTexture> t = mtl_id(texture);
+    return t.gpuResourceID._impl;
+}
+
+uint64_t mtl_sampler_resource_id(void *sampler)
+{
+    id<MTLSamplerState> s = mtl_id(sampler);
+    return s.gpuResourceID._impl;
 }
 
 uint64_t mtl_texture_width(void *texture)

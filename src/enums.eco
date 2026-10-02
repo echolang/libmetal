@@ -289,3 +289,23 @@ public enum CommandBufferStatus : uint32
     case completed = 4;
     case error = 5;
 }
+
+/**
+ * How a shader touches a resource it reaches through an argument buffer (`useResources`).
+ */
+public enum ResourceUsage : uint32
+{
+    case read = 1;
+    case write = 2;
+    case readWrite = 3;
+}
+
+/**
+ * The render stages a resource made resident by `useResources` is visible to.
+ */
+public enum RenderStages : uint32
+{
+    case vertex = 1;
+    case fragment = 2;
+    case vertexAndFragment = 3;
+}

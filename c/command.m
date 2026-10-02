@@ -451,6 +451,24 @@ void mtl_render_draw_indirect(void *enc, uint32_t primitive, void *args, uint64_
  indirectBufferOffset:(NSUInteger)args_offset];
 }
 
+void mtl_render_draw_indexed_indirect(
+    void *enc,
+    uint32_t primitive,
+    uint32_t index_type,
+    void *index_buffer,
+    uint64_t index_offset,
+    void *args,
+    uint64_t args_offset)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    [e drawIndexedPrimitives:(MTLPrimitiveType)primitive
+                   indexType:(MTLIndexType)index_type
+                 indexBuffer:mtl_id(index_buffer)
+           indexBufferOffset:(NSUInteger)index_offset
+              indirectBuffer:mtl_id(args)
+        indirectBufferOffset:(NSUInteger)args_offset];
+}
+
 void mtl_blit_end(void *enc)
 {
     id<MTLBlitCommandEncoder> e = mtl_id(enc);
@@ -559,6 +577,39 @@ void mtl_compute_set_pipeline(void *enc, void *pipeline)
 {
     id<MTLComputeCommandEncoder> e = mtl_id(enc);
     [e setComputePipelineState:mtl_id(pipeline)];
+}
+
+// useResources takes an array of ids; a stack batch keeps the bridge free of any allocation
+#define MTL_USE_BATCH 256
+
+void mtl_compute_use_resources(void *enc, void *const *resources, uint64_t count, uint32_t usage)
+{
+    id<MTLComputeCommandEncoder> e = mtl_id(enc);
+    __unsafe_unretained id<MTLResource> batch[MTL_USE_BATCH];
+    uint64_t i = 0;
+    while (i < count) {
+        uint64_t n = count - i < MTL_USE_BATCH ? count - i : MTL_USE_BATCH;
+        for (uint64_t k = 0; k < n; k++) {
+            batch[k] = (__bridge id<MTLResource>)resources[i + k];
+        }
+        [e useResources:batch count:(NSUInteger)n usage:(MTLResourceUsage)usage];
+        i += n;
+    }
+}
+
+void mtl_render_use_resources(void *enc, void *const *resources, uint64_t count, uint32_t usage, uint32_t stages)
+{
+    id<MTLRenderCommandEncoder> e = mtl_id(enc);
+    __unsafe_unretained id<MTLResource> batch[MTL_USE_BATCH];
+    uint64_t i = 0;
+    while (i < count) {
+        uint64_t n = count - i < MTL_USE_BATCH ? count - i : MTL_USE_BATCH;
+        for (uint64_t k = 0; k < n; k++) {
+            batch[k] = (__bridge id<MTLResource>)resources[i + k];
+        }
+        [e useResources:batch count:(NSUInteger)n usage:(MTLResourceUsage)usage stages:(MTLRenderStages)stages];
+        i += n;
+    }
 }
 
 void mtl_compute_set_buffer(void *enc, void *buffer, uint64_t offset, uint32_t index)

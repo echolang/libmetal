@@ -391,6 +391,44 @@ public class RenderCommandEncoder
     {
         cRenderDrawIndirect($this->raw(), $type->value(), $arguments->raw(), $offset);
     }
+
+    /**
+     * Make every texture of `$set` resident for this encoder's draws in `$stages`: the ones a
+     * shader reaches through an argument buffer rather than a bound slot.
+     */
+    public function useResources(TextureSet $set, ResourceUsage $usage, RenderStages $stages) : void
+    {
+        if ($set->count() == 0) {
+            return;
+        }
+
+        cRenderUseResources($this->raw(), $set->data(), $set->count() as uint64, $usage->value(), $stages->value());
+    }
+
+    /**
+     * Indexed draw whose index count, instance count, first index, base vertex and first
+     * instance are five uint32 the GPU wrote into `$arguments` at `$offset`. The first index
+     * counts from `$indexBufferOffset`.
+     */
+    public function drawIndexedPrimitives(
+        PrimitiveType $type,
+        IndexType $indexType,
+        Buffer $indexBuffer,
+        uint64 $indexBufferOffset,
+        indirect: Buffer $arguments,
+        uint64 $offset = 0
+    ) : void
+    {
+        cRenderDrawIndexedIndirect(
+            $this->raw(),
+            $type->value(),
+            $indexType->value(),
+            $indexBuffer->raw(),
+            $indexBufferOffset,
+            $arguments->raw(),
+            $offset
+        );
+    }
 }
 
 public class BlitCommandEncoder
@@ -582,6 +620,19 @@ public class ComputeCommandEncoder
         }
 
         return ComputeCommandEncoder($id);
+    }
+
+    /**
+     * Make every texture of `$set` resident for this encoder's dispatches: the ones a kernel
+     * reaches through an argument buffer rather than a bound slot.
+     */
+    public function useResources(TextureSet $set, ResourceUsage $usage) : void
+    {
+        if ($set->count() == 0) {
+            return;
+        }
+
+        cComputeUseResources($this->raw(), $set->data(), $set->count() as uint64, $usage->value());
     }
 
     public function endEncoding() : void

@@ -79,6 +79,7 @@ typedef struct {
     uint32_t r_address;
     uint32_t normalized;
     uint32_t max_anisotropy;
+    uint32_t argument_buffers;
 } mtl_sampler_desc;
 
 typedef struct {
@@ -191,6 +192,7 @@ uint64_t mtl_device_max_tessellation_factor(void *device);
 uint64_t mtl_device_current_allocated(void *device);
 uint64_t mtl_device_working_set(void *device);
 int32_t mtl_device_has_unified(void *device);
+int32_t mtl_device_supports_metal3(void *device);
 void *mtl_device_new_queue(void *device, const char *label);
 void *mtl_device_new_buffer(void *device, uint64_t length, uint32_t options);
 void *mtl_device_new_buffer_bytes(void *device, const void *bytes, uint64_t length, uint32_t options);
@@ -269,6 +271,8 @@ void mtl_texture_get_bytes(
     uint32_t mip,
     uint32_t slice);
 uint64_t mtl_texture_width(void *texture);
+uint64_t mtl_texture_resource_id(void *texture);
+uint64_t mtl_sampler_resource_id(void *sampler);
 uint64_t mtl_texture_height(void *texture);
 
 /* library / function */
@@ -351,6 +355,14 @@ void mtl_render_draw_patches(
     uint32_t patch_count,
     uint32_t instances);
 void mtl_render_draw_indirect(void *enc, uint32_t primitive, void *args, uint64_t args_offset);
+void mtl_render_draw_indexed_indirect(
+    void *enc,
+    uint32_t primitive,
+    uint32_t index_type,
+    void *index_buffer,
+    uint64_t index_offset,
+    void *args,
+    uint64_t args_offset);
 
 /* blit encoder */
 
@@ -398,6 +410,8 @@ void mtl_compute_set_buffer(void *enc, void *buffer, uint64_t offset, uint32_t i
 void mtl_compute_set_bytes(void *enc, const void *bytes, uint64_t length, uint32_t index);
 void mtl_compute_set_texture(void *enc, void *texture, uint32_t index);
 void mtl_compute_set_sampler(void *enc, void *sampler, uint32_t index);
+void mtl_compute_use_resources(void *enc, void *const *resources, uint64_t count, uint32_t usage);
+void mtl_render_use_resources(void *enc, void *const *resources, uint64_t count, uint32_t usage, uint32_t stages);
 void mtl_compute_dispatch(
     void *enc,
     uint64_t tw,
