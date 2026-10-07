@@ -1,13 +1,22 @@
 /**
- * `id<MTLLibrary>` and `id<MTLFunction>`.
+ * Compiled Metal shaders: `id<MTLLibrary>`, one function from it, and the
+ * compile options that built it.
  */
 
 namespace mtl;
 
 public struct CompileOptions
 {
+
+    /**
+     * One bool for both Metal knobs. Apple split `fastMathEnabled` into `mathMode` and
+     * `mathFloatingPointFunctions` on Metal 15. We still ship one switch because they mean the
+     * same thing: precise math, or the fast cheat. Default is true, matching Metal. Fast `tanh`
+     * is NaN from 45 up. That is a different function, not a rounding error.
+     */
     public bool $fastMathEnabled = true;
-    // 0: c shim uses msl 2.1
+
+    // .default is 0. the C shim turns that into MSL 2.1. alloc-init on macOS 15 is not that
     public LanguageVersion $languageVersion = .default;
 
     internal const function abi() : AbiCompileOpts

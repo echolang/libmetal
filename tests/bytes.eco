@@ -1,0 +1,80 @@
+#[if: os == darwin || os == ios]
+internal struct BytesParams
+{
+    internal uint32 $count;
+    internal float32 $scale;
+}
+
+// never called. compiling the body is the test: Echo only instantiates
+// a generic when something names it, so a setter that takes T can look
+// fine until a real call site exists
+internal function encodeRenderBytes(mtl::RenderCommandEncoder $enc, const BytesParams& $p) : void
+{
+    $enc->setVertexBytes($p, index: 0);
+    $enc->setFragmentBytes($p, index: 0);
+}
+
+test compute_set_bytes
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+
+    $src = '#include <metal_stdlib>
+using namespace metal;
+struct Params { uint count; float scale; };
+kernel void scale(device float *out [[buffer(0)]], constant Params &p [[buffer(1)]], uint gid [[thread_position_in_grid]]) { if (gid < p.count) out[gid] = p.scale * float(gid); }';
+    $compiled = $d->newLibrary(source: $src);
+
+    if ($compiled->failed()) {
+        $e = $compiled->failure();
+        // echoc test forks each test. Metal's shader compiler is XPC, and that
+        // process does not survive the fork. same skip as compute_fill
+        assert($e->message()->contains('XPC') || $e->message()->contains('Compiler'));
+        return;
+    }
+
+    $lib = $compiled->unwrap();
+
+    $fn = guard $lib->newFunction('scale') else {
+        die('mtl: missing scale');
+    }
+
+    $ps = guard $d->newComputePipelineState($fn) else ($e) {
+        die($e->message());
+    }
+
+    $b = guard $d->newBuffer(16) else {
+        die('mtl: no buffer');
+    }
+
+    $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+
+    $enc = guard $cmd->computeCommandEncoder() else {
+        die('mtl: no compute encoder');
+    }
+
+    $params = BytesParams(4, 2.5);
+    $enc->setComputePipelineState($ps);
+    $enc->setBuffer($b, index: 0);
+    $enc->setBytes($params, index: 1);
+    $enc->dispatchThreads(mtl::Size(4, 1), mtl::Size(4, 1));
+    $enc->endEncoding();
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+
+    $raw = $b->contents();
+    $out = $raw:$ as ptr<float32>;
+    assert($out:$[3] == 7.5);
+}
+#[end]

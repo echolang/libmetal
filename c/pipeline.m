@@ -1,10 +1,11 @@
 #import "internal.h"
 
 /*
- * `language_version == 0` means MSL 2.1. Leaving MTLCompileOptions at
- * alloc-init is not that: on macOS 15 the runtime compiler then rejects
- * tessellation (`patch_control_point`, `[[patch]]`) as needing macos-metal1.2.
- * SPIRV-Cross emits MSL 2.1. Newer standards are opt-in via language_version.
+ * Zero for language_version is not "let Metal pick." It is MSL 2.1.
+ * Leave MTLCompileOptions at alloc-init on macOS 15 and the runtime
+ * compiler rejects tessellation (`patch_control_point`, `[[patch]]`)
+ * as needing macos-metal1.2. SPIRV-Cross already emits 2.1, so that
+ * is the default. Newer language versions are opt-in.
  */
 
 void *mtl_device_new_library_source(
@@ -28,7 +29,18 @@ void *mtl_device_new_library_source(
     if (opts != NULL) {
         co = [[MTLCompileOptions alloc] init];
         if (@available(macOS 15.0, iOS 18.0, tvOS 18.0, *)) {
-            co.mathMode = opts->fast_math != 0 ? MTLMathModeFast : MTLMathModeSafe;
+            // mathMode is half the story. Apple also has
+            // mathFloatingPointFunctions, and leaving it unset keeps
+            // tanh, exp, log on the fast versions. Fast tanh is NaN
+            // from 45 up. pair both knobs or you did not actually
+            // turn fast math off
+            if (opts->fast_math != 0) {
+                co.mathMode = MTLMathModeFast;
+                co.mathFloatingPointFunctions = MTLMathFloatingPointFunctionsFast;
+            } else {
+                co.mathMode = MTLMathModeSafe;
+                co.mathFloatingPointFunctions = MTLMathFloatingPointFunctionsPrecise;
+            }
         } else {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"

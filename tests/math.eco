@@ -1,0 +1,64 @@
+#[if: os == darwin || os == ios]
+// Metal 15 split fast math into two knobs. this test is the catch:
+// tanh(45) is 1.0 when both are precise, NaN when the functions stay fast
+test compile_without_fast_math_is_precise
+{
+    if (!mtl::available()) {
+        die('mtl: no Metal device');
+    }
+
+    $d = guard mtl::Device::systemDefault() else {
+        die('mtl: systemDefault returned null');
+    }
+
+    $q = guard $d->newCommandQueue() else {
+        die('mtl: no command queue');
+    }
+
+    $src = '#include <metal_stdlib>
+using namespace metal;
+kernel void flat(device float *out [[buffer(0)]], uint gid [[thread_position_in_grid]]) { out[gid] = tanh(45.0f + float(gid)); }';
+    $compiled = $d->newLibrary(source: $src, mtl::CompileOptions($fastMathEnabled: false));
+
+    if ($compiled->failed()) {
+        $e = $compiled->failure();
+        // echoc test forks each test. Metal's shader compiler is XPC, and that
+        // process does not survive the fork. same skip as compute_fill
+        assert($e->message()->contains('XPC') || $e->message()->contains('Compiler'));
+        return;
+    }
+
+    $lib = $compiled->unwrap();
+
+    $fn = guard $lib->newFunction('flat') else {
+        die('mtl: missing flat');
+    }
+
+    $ps = guard $d->newComputePipelineState($fn) else ($e) {
+        die($e->message());
+    }
+
+    $b = guard $d->newBuffer(4) else {
+        die('mtl: no buffer');
+    }
+
+    $cmd = guard $q->commandBuffer() else {
+        die('mtl: no command buffer');
+    }
+
+    $enc = guard $cmd->computeCommandEncoder() else {
+        die('mtl: no compute encoder');
+    }
+
+    $enc->setComputePipelineState($ps);
+    $enc->setBuffer($b, index: 0);
+    $enc->dispatchThreads(mtl::Size(1, 1), mtl::Size(1, 1));
+    $enc->endEncoding();
+    $cmd->commit();
+    $cmd->waitUntilCompleted();
+
+    $raw = $b->contents();
+    $out = $raw:$ as ptr<float32>;
+    assert($out:$[0] == 1.0);
+}
+#[end]

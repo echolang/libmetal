@@ -263,16 +263,14 @@ public class RenderCommandEncoder
         cRenderSetFragmentBuffer($this->raw(), $buffer->raw(), $offset as uint64, $index);
     }
 
-    public function setVertexBytes<T>(const T& $data, index: uint32 $index) : void
+    public function setVertexBytes<T>(T $data, index: uint32 $index) : void
     {
-        ptr<uint8> $p = &$data;
-        cRenderSetVertexBytes($this->raw(), ptr<const uint8>($p:$), mem::size<T>() as uint64, $index);
+        cRenderSetVertexBytes($this->raw(), ptr<const uint8>(&$data), mem::size<T>() as uint64, $index);
     }
 
-    public function setFragmentBytes<T>(const T& $data, index: uint32 $index) : void
+    public function setFragmentBytes<T>(T $data, index: uint32 $index) : void
     {
-        ptr<uint8> $p = &$data;
-        cRenderSetFragmentBytes($this->raw(), ptr<const uint8>($p:$), mem::size<T>() as uint64, $index);
+        cRenderSetFragmentBytes($this->raw(), ptr<const uint8>(&$data), mem::size<T>() as uint64, $index);
     }
 
     public function setFragmentTexture(Texture $texture, index: uint32 $index) : void
@@ -687,10 +685,9 @@ public class ComputeCommandEncoder
         cComputeSetBuffer($this->raw(), $buffer->raw(), $offset as uint64, $index);
     }
 
-    public function setBytes<T>(const T& $data, index: uint32 $index) : void
+    public function setBytes<T>(T $data, index: uint32 $index) : void
     {
-        ptr<uint8> $p = &$data;
-        cComputeSetBytes($this->raw(), ptr<const uint8>($p:$), mem::size<T>() as uint64, $index);
+        cComputeSetBytes($this->raw(), ptr<const uint8>(&$data), mem::size<T>() as uint64, $index);
     }
 
     public function setTexture(Texture $texture, index: uint32 $index) : void
