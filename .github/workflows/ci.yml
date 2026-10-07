@@ -25,4 +25,9 @@ jobs:
       - uses: echolang/setup-echo@v1
 
       - name: Build and test
+        env:
+          # echoc test forks. Metal is ObjC. Apple aborts the child if
+          # +initialize was in flight in the parent. This is the
+          # documented escape hatch.
+          OBJC_DISABLE_INITIALIZE_FORK_SAFETY: YES
         run: echoc test

@@ -92,7 +92,7 @@ mtl::Library $lib = guard $d->newLibrary(source: $src) else ($e) {
 
 `newLibrary(data: $bytes, $length)` is the prebuilt `.metallib` path.
 
-Here is the catch: `echoc test` forks each test. The Metal shader compiler is XPC. XPC does not survive fork. Shader compile success is an example (`echoc run --target compute`), not a unit test. A syntax error still comes back as `result` without talking to that service, and that one is a test.
+Here is the catch: `echoc test` forks each test. Metal is ObjC, so Apple will abort the child if `+[NSMutableString initialize]` was in flight in the parent. CI sets `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`. The shader compiler is also XPC, and XPC does not survive fork. Shader compile success is an example (`echoc run --target compute`), not a unit test. A syntax error still comes back as `result` without talking to that service, and that one is a test.
 
 ## Presenting
 
